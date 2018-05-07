@@ -1,0 +1,10 @@
+{
+    "dialog-state" : {
+        "caseSensitive" : false,
+        "filePatterns" : [
+        ],
+        "path" : "~/onlinebookk21778/Ch09/software",
+        "query" : "AvgPsdValsRatings",
+        "regex" : false
+    }
+}

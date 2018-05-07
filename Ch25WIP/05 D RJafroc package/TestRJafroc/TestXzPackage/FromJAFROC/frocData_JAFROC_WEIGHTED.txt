@@ -1,0 +1,357 @@
+JAFROC SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+================================================================================
+
+JAFROC Version 4.2.1
+Last Compilation Dates
+	JAFROC_CORE.DLL : Aug 24 2014 15:46:33
+	JAFROC.EXE      : Aug 24 2014 15:46:56
+
+	Today's date: 4/13/2015 13:59:52
+
+
+FOM selected         :     ANALYSIS_METHOD_JAFROC_WEIGHTED
+Input  Data Filename :     C:\Users\Xuetong Zhai\Documents\frocData.xlsx
+Output Data Filename :     C:\Users\Xuetong Zhai\Documents\frocData_JAFROC_WEIGHTED.txt
+
+================================================================================
+ Analysis method:         :  WEIGHTED JAFROC FOM DBM-MRMC SIGNIFICANCE TESTING
+ Number of Readers        :  4
+ Number of Treatments     :  2
+ Number of Normal Cases   :  100
+ Number of Abnormal Cases :  100
+ fraction normal cases    :  0.500
+ min    LESIONS_PER_IMAGE :  1
+ max    LESIONS_PER_IMAGE :  3
+ mean   LESIONS_PER_IMAGE :  1.42
+ Total  LESIONS           :  142
+ Inc. Loc. Frac.          :  0.065
+
+================================================================================
+
+For TRT = 4         , and RDR = 1         , max FPF =  0.400.
+For TRT = 4         , and RDR = 3         , max FPF =  0.250.
+For TRT = 4         , and RDR = 4         , max FPF =  0.500.
+For TRT = 4         , and RDR = 5         , max FPF =  0.220.
+For TRT = 5         , and RDR = 1         , max FPF =  0.420.
+For TRT = 5         , and RDR = 3         , max FPF =  0.240.
+For TRT = 5         , and RDR = 4         , max FPF =  0.480.
+For TRT = 5         , and RDR = 5         , max FPF =  0.250.
+
+================================================================================
+
+ Avg. number of non-lesion localization marks per reader on normal images:  0.456.
+ Avg. number of non-lesion localization marks per reader on abnormal images:  0.253.
+ Avg. number of lesion localization marks per reader :  0.920.
+
+================================================================================
+
+ ====================================================================
+ *****                        Overview                          *****
+ ====================================================================
+ Three analyses are presented: 
+ (1) Analysis 1 treats both readers and cases as random samples
+     --results apply to the reader and case populations;
+ (2) Analysis 2 treats only cases as a random sample
+     --results apply to the population of cases but only for the
+     readers used in this study; and
+ (3) Analysis 3 treats only readers as a random sample
+     --results apply to the population of readers but only for the
+     cases used in this study.
+ 
+ For all three analyses, the null hypothesis of equal treatments is
+ tested in part (a), treatment difference 95% confidence intervals
+ are given in part (b), and treatment 95% confidence intervals are
+ given in part (c).  Parts (a) and (b) are based on the treatment x
+ reader x case ANOVA while part (c) is based on the reader x case
+ ANOVA for the specified treatment; these ANOVA tables are displayed
+ before the analyses.  Different error terms are used as indicated
+ for parts (a), (b), and (c) according to whether readers and cases
+ are treated as fixed or random factors.  Note that the treatment
+ confidence intervals in part (c) are based only on the data for the
+ specified treatment, rather than the pooled data.  Treatment
+ difference 95% confidence intervals for each reader are presented
+ in part (d) of Analysis 2; each interval is based on the treatment
+ x case ANOVA table (not included) for the specified reader.
+ ===========================================================================
+ *****                            Estimates                            *****
+ ===========================================================================
+
+                        TREATMENT
+              -----------------------
+  READER      4            5         
+----------    ----------   ----------
+1             0.80940998   0.74813902
+3             0.74239552   0.68155551
+4             0.69353503   0.65451348
+5             0.82858652   0.77041650
+ 
+ 
+ TREATMENT MEANS (averaged across readers)
+----------    -----------------------------
+4             0.76848179
+5             0.71365613
+ 
+ 
+
+ TREATMENT MEAN DIFFERENCES
+----------   ----------    -----------
+4          - 5             0.05482566
+ 
+ 
+ 
+ 
+ ===========================================================================
+ *****                          ANOVA Tables                           *****
+ ===========================================================================
+ 
+ TREATMENT X READER X CASE ANOVA
+ 
+Source            SS               DF             MS        
+------   --------------------    ------   ------------------
+     T             1.20233978         1           1.20233978
+     R             4.07099589         3           1.35699863
+     C           129.52660041       199           0.65088744
+    TR             0.03386685         3           0.01128895
+    TC            24.46180372       199           0.12292364
+    RC            89.93452934       597           0.15064410
+   TRC            51.27898862       597           0.08589445
+ TOTAL           300.50912462      1599
+ 
+ 
+ 
+ READER X CASE ANOVAs for each treatment
+ 
+ 
+                        Mean Squares
+ Source     df   4            5         
+ ------    ---   ----------   ----------   
+      R      3   0.77234679   0.59594080
+      C    199   0.35875738   0.41505369
+     RC    597   0.10953451   0.12700405 
+ 
+ ===========================================================================
+ *****                  Variance components estimates                  *****
+ ===========================================================================
+ 
+ DBM Variance Component Estimates
+ (for sample size estimation for future studies)
+ Note: These are unbiased ANOVA estimates which can be negative
+ 
+     DBM Component            Estimate    
+ -----------------------  ----------------
+ Var(R)                         0.00320240
+ Var(C)                         0.05790177
+ Var(T*R)                      -0.00037303
+ Var(T*C)                       0.00925730
+ Var(R*C)                       0.03237482
+ Var(T*R*C) + Var(Error)        0.08589445
+ 
+ Obuchowski-Rockette variance component and covariance estimates
+ (for sample size estimation for future studies)
+ Note: These are unbiased ANOVA estimates which can be negative
+ 
+     OR Component             Estimate    
+ -----------------------  ----------------
+ Reader                         0.00320240
+ Treatment*Reader              -0.00037303
+ COV1                           0.00045138
+ COV2                           0.00033580
+ COV3                           0.00028951
+ ERROR                          0.00092714
+ 
+ 
+ ===========================================================================
+ *****           Analysis 1: Random Readers and Random Cases           *****
+ ===========================================================================
+ (Results apply to the population of readers and cases)
+
+
+    a) Test for H0: Treatments have the same ANALYSIS_METHOD_JAFROC_WEIGHTED
+ 
+ Source        DF    Mean Square      F value  Pr > F 
+ ----------  ------  ---------------  -------  -------
+ Treatment        1       1.20233978    24.88  <0.0001
+ Error        54.96       0.04831813
+ Error term: MS(TR) + max[MS(TC)-MS(TRC),0]
+ 
+ Conclusion: The treatment ANALYSIS_METHOD_JAFROC_WEIGHTEDs are not equal,
+             F(1,54.96) = 24.88, p = 0.0000.
+
+
+    b) 95% confidence intervals for treatment differences
+ 
+       Treatment         Estimate   StdErr      DF      t     Pr > t          95% CI      
+----------   ----------  --------  --------  -------  ------  -------  -------------------
+4          - 5            0.05483   0.01099    54.96    4.99   0.0000   0.03280 ,  0.07685
+ 
+ H0: the two treatments are equal.
+ Error term: MS(TR) + max[MS(TC)-MS(TRC),0]
+ 
+
+    c) 95% treatment confidence intervals based on reader x case ANOVAs
+       for each treatment (each analysis is based only on data for the
+       specified treatment
+ 
+  Treatment     Area      Std Error     DF     95% Confidence Interval 
+  ----------  ----------  ----------  -------  -------------------------
+  4           0.76848176  0.03573461     5.25  (0.67791573 , 0.85904778)
+  5           0.71365613  0.03324136     6.60  (0.63407933 , 0.79323293)
+ Error term: MS(R) + max[MS(C)-MS(RC),0]
+ 
+ 
+ 
+ ===========================================================================
+ *****           Analysis 2: Fixed Readers and Random Cases            *****
+ ===========================================================================
+ 
+ (Results apply to the population of cases but only for the readers
+ used in this study)
+ 
+    a) Test for H0: Treatments have the same ANALYSIS_METHOD_JAFROC_WEIGHTED
+ 
+ Source        DF    Mean Square      F value  Pr > F 
+ ----------  ------  ---------------  -------  -------
+ Treatment        1       1.20233978     9.78   0.0020
+ Error          199       0.12292364
+ Error term: MS(TC)
+ 
+ Conclusion: The treatment ANALYSIS_METHOD_JAFROC_WEIGHTEDs are not equal,
+             F(1,199.00) = 9.78, p = 0.0020.
+
+
+    b) 95% confidence intervals for treatment differences
+ 
+       Treatment         Estimate   StdErr      DF      t     Pr > t          95% CI      
+----------   ----------  --------  --------  -------  ------  -------  -------------------
+4          - 5            0.05483   0.01753      199    3.13   0.0020   0.02026 ,  0.08939
+ 
+ H0: the two treatments are equal.
+ Error term: MS(TC)
+ 
+
+    c) 95% treatment confidence intervals based on reader x case ANOVAs
+       for each treatment (each analysis is based only on data for the
+       specified treatment
+ 
+  Treatment     Area      Std Error     DF     95% Confidence Interval 
+  ----------  ----------  ----------  -------  -------------------------
+  4           0.76848176  0.02117656      199  (0.72672250 , 0.81024102)
+  5           0.71365613  0.02277756      199  (0.66873978 , 0.75857248)
+ Error term: MS(C)
+ 
+ 
+ 
+ TREATMENT X CASE ANOVAs for each reader
+ 
+
+                        Sum of Squares
+ Source     df   1             3             4             5             
+ ------    ---   -----------   -----------   -----------   -----------   
+      T      1     0.3754132     0.3701505     0.1522682     0.3383747   
+      C    199    49.9508191    55.4280885    69.7403284    44.3418937   
+     TC    199    16.2375402    17.1592334    26.8412082    15.5028106   
+ 
+
+                        Mean Squares
+ Source     df   1             3             4             5             
+ ------    ---   -----------   -----------   -----------   -----------   
+      T      1     0.3754132     0.3701505     0.1522682     0.3383747   
+      C    199     0.2510091     0.2785331     0.3504539     0.2228236   
+     TC    199     0.0815957     0.0862273     0.1348804     0.0779036   
+ 
+ 
+
+
+    d) Treatment-by-case ANOVA CIs for each reader 
+       (each analysis is based only on data for the specified reader)
+ 
+  Reader         Treatment        Estimate  StdErr       DF      t     Pr > t          95% CI      
+---------- ---------- ----------  --------  --------  -------  ------  -------  -------------------
+1          4         -5            0.06127   0.02856      199    2.14   0.0332   0.00494 ,  0.11760
+3          4         -5            0.06084   0.02936      199    2.07   0.0396   0.00293 ,  0.11875
+4          4         -5            0.03902   0.03673      199    1.06   0.2893  -0.03340 ,  0.11144
+5          4         -5            0.05817   0.02791      199    2.08   0.0384   0.00313 ,  0.11321
+ 
+ 
+ ===========================================================================
+ *****           Analysis 3: Random Readers and Fixed Cases            *****
+ ===========================================================================
+ (Results apply to the population of readers but only for the cases used in this study)
+
+
+    a) Test for H0: Treatments have the same ANALYSIS_METHOD_JAFROC_WEIGHTED
+ 
+ Source        DF    Mean Square      F value  Pr > F 
+ ----------  ------  ---------------  -------  -------
+ Treatment        1       1.20233978   106.51   0.0019
+ Error         3.00       0.01128895
+ Error term: MS(TR)
+ 
+ Conclusion: The treatment ANALYSIS_METHOD_JAFROC_WEIGHTEDs are not equal,
+             F(1,3.00) = 106.51, p = 0.0019.
+
+
+    b) 95% confidence intervals for treatment differences
+ 
+       Treatment         Estimate   StdErr      DF      t     Pr > t          95% CI      
+----------   ----------  --------  --------  -------  ------  -------  -------------------
+4          - 5            0.05483   0.00531     3.00   10.32   0.0019   0.03792 ,  0.07173
+ 
+ H0: the two treatments are equal.
+ 
+ 
+
+    c) Reader-by-case ANOVAs for each treatment (each analysis is based
+       only on data for the specified treatment)
+ 
+
+                        Mean Squares
+ Source     df   4            5            
+ ------    ---   ----------   ----------   
+      R      3   0.77234679   0.59594080   
+      C    199   0.35875738   0.41505369   
+     RC    597   0.10953451   0.12700405   
+
+
+ Estimates and 95% Confidence Intervals
+
+  Treatment     Area      Std Error     DF     95% Confidence Interval 
+  ----------  ----------  ----------  -------  -------------------------
+  4           0.76848176  0.03107143        3  (0.66959862 , 0.86736490)
+  5           0.71365613  0.02729333        3  (0.62679657 , 0.80051570)
+ 
+
+
+
+                               REFERENCES
+
+      Dorfman, D.D., Berbaum, K.S., & Metz, C.E. (1992). Receiver operating
+ characteristic rating analysis: Generalization to the population of 
+ readers and patients with the jackknife method. Investigative Radiology,
+ 27, 723-731.
+
+      Dorfman, D.D., Berbaum, K.S., Lenth, R.V., Chen, Y.F., & Donaghy, B.A. (1998). 
+ Monte Carlo validation of a multireader method for receiver operating characteristic 
+ discrete rating data: Factorial experimental design. 
+ Academic Radiology, 5, 591-602.
+
+      Hillis, S.L., & Berbaum, K.S. (2004). Power estimation for the
+ Dorfman-Berbaum-Metz method. Academic Radiology, 11, 1260-1273.
+
+      Hillis, S.L., Obuchowski, N.A., Schartz, K.M., & Berbaum, K.S.
+ (2005). A comparison of the Dorfman-Berbaum-Metz and Obuchowski-Rockette
+ methods for receiver operating characteristic (ROC) data. 
+ Statistics in Medicine, 24, 1579-1607  DOI:10.1002/sim.2024.
+
+      Hillis, S.L. (2005). Monte Carlo validation of the Dorfman-Berbaum-Metz
+ method using normalized pseudovalues and less data-based model simplification
+ Academic Radiology, 12:1534-1541  DOI:10.1016/j.acra.2005.07.012.
+
+      Hillis, S.L. (2007). A comparison of denominator degrees of freedom for
+ multiple observer ROC analysis.  Statistics in Medicine, 26:596-619  DOI:10.1002/sim.2532.
+
+      Hillis, S.L., Berbaum, K.S., & Metz, C.E. (2008). Recent developments in the
+ Dorfman-Berbaum-Metz procedure for multireader ROC study analysis. Academic Radiology, in press.
+
+================================================================================

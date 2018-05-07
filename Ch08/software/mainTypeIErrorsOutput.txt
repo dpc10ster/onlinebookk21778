@@ -1,0 +1,5 @@
+> source(...)
+alpha =  0.05 
+ObsvdTypeIErrRate =  0.049 
+95% confidence interval =  0.03953934 0.049 
+exact 95% CI =  0.03995676 0.05939265 

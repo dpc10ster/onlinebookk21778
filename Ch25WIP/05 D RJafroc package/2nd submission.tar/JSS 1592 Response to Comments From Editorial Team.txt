@@ -1,0 +1,30 @@
+JSS 1592: Chakraborty, ZhaiAnalysis of Data Acquired Using ROC Paradigm and Its Extensions---------------------------------------------------------For further instruction on JSS style requirements please see the JSS style manual (in particular section 2.1 Style Checklist) at http://www.jstatsoft.org/downloads/JSSstyle.zipAlso see FAQ at: http://www.jstatsoft.org/styleFor further references please see RECENT JSS papers for detailed documentation and examples.---------------------------------------------------------From the editorial team:All software mentioned should have a proper citation in the reference list.Response: 
+All software citations have been updated to comply with JSS style.Running the examples gives me the following error:>>> OutputReport(dataset = frocData, method = "DBMH", fom = "Wilcoxon",> +ÊÊÊÊÊÊÊÊÊÊÊÊÊ showWarnings = FALSE) # ERROR!> Error in FigureOfMerit(dataset, fom) :>Ê Cannot use Wilcoxon with FROC or ROI data> Calls: OutputReport -> DBMHAnalysis -> FigureOfMeritResponseThe section on Generating an output report, in which this example occurs, has been completely rewritten to avoid the misunderstanding. The revised version of this section now reads:
+
+The next example is deliberately included as an example of erroneous usage of the function. It will generate an error since the \code{fom} option set to \code{Wilcoxon} is incompatible with the FROC dataset (see Table~\ref{tab:terminology} for valid FOMs with FROC data). 
+
+<<message=FALSE,eval=FALSE>>=
+OutputReport(dataset = frocData, fom = "Wilcoxon",
+  showWarnings = FALSE)
+@
+There are many style issues, especially code and reference formatting. (See below)Response
+Thank you for noting them; they have been corrected.Manuscript style comments:Please only introduce an abbreviation within the abstract if it is needed again within the abstract. Otherwise, please introduce it within the body of the manuscript.Response
+Done\section, \subsection, etc. should be in sentence style (see http://www.jstatsoft.org/style#q2), e.g., change Ò2. Statistical Models and MethodsÓ to Ò2. Statistical models and 
+methodsÓResponse
+DoneThe code presented in the manuscript should not contain comments within the verbatim code. Instead the comments should be made in the normal LaTeX text.Response
+Done; all comments have been removed, and explanations have beed added in the sections immediately preceding the code examples.Code should be presented without additional background or coloring. Response
+DoneFor the code layout in R publications, we use the command prompt ÒR>Ó and typically distinguish input/output using Sinput/Soutput (or equivalently CodeInput/CodeOutput). Unless there are special reasons to format it differently, the input should use the text width (up to 76 or 77 characters) and be indented by two spaces, e.g.,begin{Sinput}R> example_model <- lm(response ~ variable1 + variable2 + variable3, +    weights = w, data = mydata)\end{Sinput}Response
+DoneAll captions should appear below the corresponding figure/table.Response
+DoneAll table row/column headers should also be in sentence style. Response
+DoneAs a reminder, please make sure that:	- \proglang, \pkg and \code have been used for highlighting throughout the paper (including titles and references), except where explicitly escaped.
+
+Response
+We have carefully checked this and believe it has been fully implemented.References:The Annals of Mathematical Statistics (not: Annals of Mathematical Statistics)Response
+DoneSpringer-Verlag (not: Springer)Response
+DoneAs mentioned above, please make sure that all software packages are \cite{}'d properly.Response
+Done, to the best of our knowledge.All references should be in title style.Response
+DoneSee FAQ for specific reference instructions.Response
+DoneCode:Please make sure that the files needed to replicate all code/examples within the manuscript are included in a standalone replication script.
+
+Response
+Done; example data files that previously had to be downloaded from an external website have been moved to the package;the package is now fully self-contained.

@@ -1,0 +1,256 @@
+RJafroc SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, 
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+IN THE SOFTWARE.
+
+================================================================================
+
+Package build stats: R 3.1.3; ; 2015-04-20 20:13:40 UTC; unix
+Run date: Apr 20 2015 Mon 16:14:54 EDT
+ FOM selected         :     wJAFROC
+ Input  Data          :     frocData
+ Output Data Filename :     /Users/Dev/book/0 temporary/XzPaper/TestXzPackage/frocData_ORH_wJAFROC.txt
+
+================================================================================
+
+ Significance testing method:  OBUCHOWSKI-ROCKETTE-HILLIS SIGNIFICANCE TESTING
+ Number of Readers          :  4
+ Number of Treatments       :  2
+ Number of Normal Cases     :  100
+ Number of Abnormal Cases   :  100
+ Fraction of Normal Cases   :  0.500000
+ Min number of lesions per diseased case   :  1
+ Max number of lesions per diseased case   :  3
+ Mean number of lesions per diseased case  :  1.420000
+ Total number of lesions                   :  142
+ Inc. Loc. Frac.          :  0.176250
+
+
+================================================================================
+
+ Avg. number of non-lesion localization marks per reader on non-diseased cases: 0.456250
+ Avg. number of non-lesion localization marks per reader on diseased cases:  0.252500
+ Avg. number of lesion localization marks per reader :  0.920000
+
+================================================================================
+
+ ====================================================================
+ *****                        Overview                          *****
+ ====================================================================
+ Three analyses are presented: 
+ (1) Analysis 1 treats both readers and cases as random samples
+     --results apply to the reader and case populations;
+ (2) Analysis 2 treats only cases as a random sample
+     --results apply to the population of cases but only for the
+     readers used in this study; and
+ (3) Analysis 3 treats only readers as a random sample
+     --results apply to the population of readers but only for the
+     cases used in this study.
+
+ For all three analyses, the null hypothesis of equal treatments is
+ tested in part (a), treatment difference 95% confidence intervals
+ are given in part (b), and treatment 95% confidence intervals are
+ given in part (c).  Parts (a) and (b) are based on the treatment x
+ reader x case ANOVA while part (c) is based on the reader x case
+ ANOVA for the specified treatment; these ANOVA tables are displayed
+ before the analyses.  Different error terms are used as indicated
+ for parts (a), (b), and (c) according to whether readers and cases
+ are treated as fixed or random factors.  Note that the treatment
+ confidence intervals in part (c) are based only on the data for the
+ specified treatment, rather than the pooled data.  Treatment
+ difference 95% confidence intervals for each reader are presented
+ in part (d) of Analysis 2; each interval is based on the treatment
+ x case ANOVA table (not included) for the specified reader.
+
+ ===========================================================================
+ *****                            Estimates                            *****
+ ===========================================================================
+
+                        TREATMENT
+              -----------------------
+  READER      4            5         
+----------    ----------   ----------
+1             0.80941000   0.74813900
+3             0.74239550   0.68155550
+4             0.69353500   0.65451350
+5             0.82858650   0.77041650
+
+
+ TREATMENT MEANS (averaged across readers)
+----------    -----------------------------
+4             0.76848175
+5             0.71365612
+
+
+
+ TREATMENT MEAN DIFFERENCES
+----------   ----------    -----------
+4          - 5             0.05482562
+
+
+
+
+ ===========================================================================
+ *****                  Variance Components Estimates                  *****
+ ===========================================================================
+
+ Obuchowski-Rockette variance component and covariance estimates
+
+     OR Component             Estimate    
+ -----------------------  ----------------
+ Var(R)                        0.00320240
+ Var(T*R)                     -0.00037303
+ COV1                          0.00045138
+ COV2                          0.00033580
+ COV3                          0.00028951
+ Var(Error)                    0.00092714
+
+
+ ===========================================================================
+ *****           Analysis 1: Random Readers and Random Cases           *****
+ ===========================================================================
+
+
+ (Results apply to the population of readers and cases)
+
+
+    a) Test for H0: Treatments have the same wJAFROC figure of merit.
+
+
+ Source        DF    Mean Square      F value  Pr > F 
+ ----------  ------  ---------------  -------  -------
+ Treatment        1       0.00601170    24.88  <0.0001
+ Error        54.96       0.00005645
+ Error term: MS(TR) + J * max[Cov2 - Cov3, 0]
+
+ Conclusion: The wJAFROC FOMs of treatments are not equal,
+             F(1,54.96) = 24.88, p = 0.0000.
+
+
+    b) 95% confidence intervals for treatment differences
+
+       Treatment         Estimate   StdErr      DF      t     Pr > t          95% CI      
+----------   ----------  --------  --------  -------  ------  -------  -------------------
+4          - 5            0.05483   0.01099    54.96    4.99   2.0000   0.03280 ,  0.07685
+
+
+
+ H0: the two treatments are equal.
+ Error term: MS(TR) + J * max[Cov2 - Cov3, 0]
+
+
+    c) 95% treatment confidence intervals based on reader x case ANOVAs
+       for each treatment (each analysis is based only on data for the
+       specified treatment
+
+  Treatment     Area      Std Error     DF     95% Confidence Interval 
+  ----------  ----------  ----------  -------  -------------------------
+  4           0.76848175  0.03573461     5.25  (0.67791569 , 0.85904781)
+  5           0.71365612  0.03324135     6.60  (0.63407934 , 0.79323291)
+
+
+
+
+ ===========================================================================
+ *****           Analysis 2: Fixed Readers and Random Cases            *****
+ ===========================================================================
+
+
+ (Results apply to the population of cases but only for the readers
+ used in this study)
+
+
+    a) Test for H0: Treatments have the same wJAFROC figure of merit.
+
+
+ Source        DF    Mean Square      F value  Pr > F 
+ ----------  ------  ---------------  -------  -------
+ Treatment        1       0.00601170     9.78   0.0018
+
+ Error term: Var - Cov1 + (J - 1) * ( Cov2 - Cov3 )
+
+ Conclusion: The wJAFROC FOMs of treatments are not equal,
+             F(1,Inf) = 9.78, p = 0.0018.
+
+
+    b) 95% confidence intervals for treatment differences
+
+       Treatment         Estimate   StdErr      DF      t     Pr > t          95% CI      
+----------   ----------  --------  --------  -------  ------  -------  -------------------
+4          - 5            0.05483   0.01753      Inf    3.13   1.9982   0.02047 ,  0.08918
+
+
+
+ H0: the two treatments are equal.
+ Error term: Var - Cov1 + (J - 1) * ( Cov2 - Cov3 )
+
+    c) 95% treatment confidence intervals based on reader x case ANOVAs
+       for each treatment (each analysis is based only on data for the
+       specified treatment
+
+  Treatment     Area      Std Error     DF     95% Confidence Interval 
+  ----------  ----------  ----------  -------  -------------------------
+  4           0.76848175  0.02117656      Inf  (0.72697646 , 0.80998704)
+  5           0.71365612  0.02277756      Inf  (0.66901293 , 0.75829932)
+ Error term: Var - Cov1 + (J - 1) * ( Cov2 - Cov3 )
+
+    d) Treatment-by-case ANOVA CIs for each reader 
+       (each analysis is based only on data for the specified reader)
+
+  Reader         Treatment        Estimate  StdErr       DF      t     Pr > t          95% CI      
+---------- ---------- ----------  --------  --------  -------  ------  -------  -------------------
+1          4         -5            0.06127   0.02856      Inf    2.14   1.9680   0.00528 ,  0.11726
+3          4         -5            0.06084   0.02936      Inf    2.07   1.9617   0.00329 ,  0.11839
+4          4         -5            0.03902   0.03673      Inf    1.06   1.7120  -0.03296 ,  0.11100
+5          4         -5            0.05817   0.02791      Inf    2.08   1.9628   0.00346 ,  0.11288
+
+Reader  Var(Error)     Cov1   
+------  ----------  ----------
+1         0.000831    0.000423
+3         0.000911    0.000480
+4         0.001213    0.000538
+5         0.000751    0.000362
+
+
+
+ ===========================================================================
+ *****           Analysis 3: Random Readers and Fixed Cases            *****
+ ===========================================================================
+ (Results apply to the population of readers but only for the cases used in this study)
+
+
+    a) Test for H0: Treatments have the same wJAFROC figure of merit.
+
+
+ Source        DF    Mean Square      F value  Pr > F 
+ ----------  ------  ---------------  -------  -------
+ Treatment        1       0.00601170   106.51   0.0019
+ Error         3.00       0.00005645
+ Error term: MS(TR)
+
+ Conclusion: The wJAFROC FOMs of treatments are not equal,
+             F(1,3.00) = 106.51, p = 0.0019.
+
+
+    b) 95% confidence intervals for treatment differences
+
+       Treatment         Estimate   StdErr      DF      t     Pr > t          95% CI      
+----------   ----------  --------  --------  -------  ------  -------  -------------------
+4          - 5            0.05483   0.00531     3.00   10.32   1.9981   0.03792 ,  0.07173
+
+
+
+ H0: the two treatments are equal.
+
+
+
+    c) Reader-by-case ANOVAs for each treatment (each analysis is based only on data for the
+       specified treatment
+
+  Treatment     Area      Std Error     DF     95% Confidence Interval 
+  ----------  ----------  ----------  -------  -------------------------
+  4           0.76848175  0.03107144     3.00  (0.66959857 , 0.86736493)
+  5           0.71365612  0.02729333     3.00  (0.62679657 , 0.80051568)

@@ -1,0 +1,195 @@
+JAFROC SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+================================================================================
+
+JAFROC Version 4.2.1
+Last Compilation Dates
+	JAFROC_CORE.DLL : Aug 24 2014 15:49:46
+	JAFROC.EXE      : Aug 24 2014 15:50:19
+
+	Today's date: 12/14/2014 18:09:03
+
+
+FOM selected         :     ANALYSIS_METHOD_HR_ROC
+Input  Data Filename :     C:\Documents and Settings\All Users\Documents\R1binned.xlsx
+Output Data Filename :     C:\Documents and Settings\All Users\Documents\R1binned_Inferred_ROC.txt
+
+================================================================================
+ Analysis method:         :  Inferred ROC FOM DBM-MRMC SIGNIFICANCE TESTING
+ Number of Readers        :  1
+ Number of Treatments     :  2
+ Number of Normal Cases   :  45
+ Number of Abnormal Cases :  47
+ fraction normal cases    :  0.489
+ min    LESIONS_PER_IMAGE :  1
+ max    LESIONS_PER_IMAGE :  1
+ mean   LESIONS_PER_IMAGE :  1
+ Total  LESIONS           :  47
+ Inc. Loc. Frac.          :  0.000
+
+================================================================================
+
+For TRT = 1         ,                    , max FPF =  1.000.
+For TRT = 2         ,                    , max FPF =  1.000.
+
+================================================================================
+
+ Avg. number of non-lesion localization marks per reader on normal images:  1.000.
+ Avg. number of non-lesion localization marks per reader on abnormal images:  0.000.
+ Avg. number of lesion localization marks per reader :  1.000.
+
+================================================================================
+
+ ====================================================================
+ *****                        Overview                          *****
+ ====================================================================
+ Three analyses are presented: 
+ (1) Analysis 1 treats both readers and cases as random samples
+     --results apply to the reader and case populations;
+ (2) Analysis 2 treats only cases as a random sample
+     --results apply to the population of cases but only for the
+     readers used in this study; and
+ (3) Analysis 3 treats only readers as a random sample
+     --results apply to the population of readers but only for the
+     cases used in this study.
+ 
+ For all three analyses, the null hypothesis of equal treatments is
+ tested in part (a), treatment difference 95% confidence intervals
+ are given in part (b), and treatment 95% confidence intervals are
+ given in part (c).  Parts (a) and (b) are based on the treatment x
+ reader x case ANOVA while part (c) is based on the reader x case
+ ANOVA for the specified treatment; these ANOVA tables are displayed
+ before the analyses.  Different error terms are used as indicated
+ for parts (a), (b), and (c) according to whether readers and cases
+ are treated as fixed or random factors.  Note that the treatment
+ confidence intervals in part (c) are based only on the data for the
+ specified treatment, rather than the pooled data.  Treatment
+ difference 95% confidence intervals for each reader are presented
+ in part (d) of Analysis 2; each interval is based on the treatment
+ x case ANOVA table (not included) for the specified reader.
+ ===========================================================================
+ *****                            Estimates                            *****
+ ===========================================================================
+
+                        TREATMENT
+              -----------------------
+  READER      1            2         
+----------    ----------   ----------
+1             0.85248226   0.84255320
+ 
+ 
+ TREATMENT MEANS (averaged across readers)
+----------    -----------------------------
+1             0.85248226
+2             0.84255320
+ 
+ 
+
+ TREATMENT MEAN DIFFERENCES
+----------   ----------    -----------
+1          - 2             0.00992906
+ 
+ 
+ 
+ 
+ ===========================================================================
+ *****           Analysis 2: Fixed Readers and Random Cases            *****
+ ===========================================================================
+ 
+ (Results apply to the population of cases but only for the readers
+ used in this study)
+ 
+    a) Test for H0: Treatments have the same ANALYSIS_METHOD_HR_ROC
+ 
+ Source        DF    Mean Square      F value  Pr > F 
+ ----------  ------  ---------------  -------  -------
+ Treatment        1       0.00453498     0.04   0.8502
+ Error           91       0.12649465
+ Error term: MS(TC)
+ 
+ Conclusion: The treatment ANALYSIS_METHOD_HR_ROCs are not significantly different,
+             F(1,91.00) = 0.04, p = 0.8502.
+
+
+    b) 95% confidence intervals for treatment differences
+ 
+       Treatment         Estimate   StdErr      DF      t     Pr > t          95% CI      
+----------   ----------  --------  --------  -------  ------  -------  -------------------
+1          - 2            0.00993   0.05244       91    0.19   0.8502  -0.09424 ,  0.11409
+ 
+ H0: the two treatments are equal.
+ Error term: MS(TC)
+ 
+
+    c) 95% treatment confidence intervals based on reader x case ANOVAs
+       for each treatment (each analysis is based only on data for the
+       specified treatment
+ 
+  Treatment     Area      Std Error     DF     95% Confidence Interval 
+  ----------  ----------  ----------  -------  -------------------------
+  1           0.85248224  0.04057688       91  (0.77188124 , 0.93308323)
+  2           0.84255316  0.03981475       91  (0.76346606 , 0.92164027)
+ Error term: MS(C)
+ 
+ 
+ 
+ TREATMENT X CASE ANOVAs for each reader
+ 
+
+                        Sum of Squares
+ Source     df   1             
+ ------    ---   -----------   
+      T      1     0.0045350   
+      C     91    15.5447599   
+     TC     91    11.5110134   
+ 
+
+                        Mean Squares
+ Source     df   1             
+ ------    ---   -----------   
+      T      1     0.0045350   
+      C     91     0.1708215   
+     TC     91     0.1264947   
+ 
+ 
+
+
+    d) Treatment-by-case ANOVA CIs for each reader 
+       (each analysis is based only on data for the specified reader)
+ 
+  Reader         Treatment        Estimate  StdErr       DF      t     Pr > t          95% CI      
+---------- ---------- ----------  --------  --------  -------  ------  -------  -------------------
+1          1         -2            0.00993   0.05244       91    0.19   0.8502  -0.09424 ,  0.11409
+ 
+ 
+                               REFERENCES
+
+      Dorfman, D.D., Berbaum, K.S., & Metz, C.E. (1992). Receiver operating
+ characteristic rating analysis: Generalization to the population of 
+ readers and patients with the jackknife method. Investigative Radiology,
+ 27, 723-731.
+
+      Dorfman, D.D., Berbaum, K.S., Lenth, R.V., Chen, Y.F., & Donaghy, B.A. (1998). 
+ Monte Carlo validation of a multireader method for receiver operating characteristic 
+ discrete rating data: Factorial experimental design. 
+ Academic Radiology, 5, 591-602.
+
+      Hillis, S.L., & Berbaum, K.S. (2004). Power estimation for the
+ Dorfman-Berbaum-Metz method. Academic Radiology, 11, 1260-1273.
+
+      Hillis, S.L., Obuchowski, N.A., Schartz, K.M., & Berbaum, K.S.
+ (2005). A comparison of the Dorfman-Berbaum-Metz and Obuchowski-Rockette
+ methods for receiver operating characteristic (ROC) data. 
+ Statistics in Medicine, 24, 1579-1607  DOI:10.1002/sim.2024.
+
+      Hillis, S.L. (2005). Monte Carlo validation of the Dorfman-Berbaum-Metz
+ method using normalized pseudovalues and less data-based model simplification
+ Academic Radiology, 12:1534-1541  DOI:10.1016/j.acra.2005.07.012.
+
+      Hillis, S.L. (2007). A comparison of denominator degrees of freedom for
+ multiple observer ROC analysis.  Statistics in Medicine, 26:596-619  DOI:10.1002/sim.2532.
+
+      Hillis, S.L., Berbaum, K.S., & Metz, C.E. (2008). Recent developments in the
+ Dorfman-Berbaum-Metz procedure for multireader ROC study analysis. Academic Radiology, in press.
+
+================================================================================

@@ -1,0 +1,33 @@
+rm(list = ls()) #mainSsOrh.R
+library(RJafroc)
+BestCaseScenario <-  FALSE;alpha <- 0.05;cat("alpha = ", alpha, "\n")
+fileName <- "VanDyke.lrc"
+#fileName <- "Franken1.lrc"
+cat("File name = ", fileName, "\n")
+rocData <- ReadDataFile(fileName, format = "MRMC")
+KStar <- length(rocData$NL[1,1,,1])
+retORH <- ORHAnalysis(rocData, FOM = "Wilcoxon")
+Cov1 <- retORH$varComp$varCov[3]
+Cov2 <- retORH$varComp$varCov[4]
+Cov3 <- retORH$varComp$varCov[5]
+Var <- retORH$varComp$varCov[6]
+VarTR <- retORH$varComp$varCov[2]
+VarTR <- max(VarTR,0)
+effectSize <-retORH$ciDiffTrtRRRC$Estimate
+sigma <- (retORH$ciDiffTrtRRRC$`CI Upper`-retORH$ciDiffTrtRRRC$`CI Lower`)/4
+if (BestCaseScenario == TRUE) {
+  if (fileName == "VanDyke.lrc") {
+    effectSize <- effectSize -2*sigma
+  }
+  if (fileName == "Franken1.lrc") {
+    effectSize <- effectSize +2*sigma
+  }
+}
+#effectSize <--0.05
+#effectSize <-+0.03
+cat("p-value = ", retORH$pRRRC, ", postulated effectSize = ",
+    effectSize, ", CI Lower =", retORH$ciDiffTrtRRRC$`CI Lower`,
+    ", CI Upper =", retORH$ciDiffTrtRRRC$`CI Upper`, "\n")
+powTab <- SsPowerTable(alpha = alpha, effectSize = effectSize, desiredPower = 0.8,  
+                       method = "ORH", option = "ALL", Cov1, Cov2, Cov3, VarTR, Var, KStar)
+print(powTab)

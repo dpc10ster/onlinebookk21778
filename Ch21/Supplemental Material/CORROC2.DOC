@@ -1,0 +1,314 @@
+C                                                                               
+C                        :------------------------:                             
+C                        :                        :            
+C                        :   'CORROC2'  PROGRAM   :            JUNE 1988 (PC)
+C                        |    (IBM-PC VERSION)    |
+C                        :                        :                             
+C                        :------------------------:                             
+C                                                                               
+C                                                                               
+C*******************************************************************************
+C                                                                              *
+C     THIS PROGRAM IS APPLICABLE TO CORRELATED, INHERENTLY CATEGORICAL         *
+C     RATING-SCALE DATA. FOR CORRELATED BUT CONTINUOUSLY-DISTRIBUTED DATA,     *
+C     THE 'CLABROC' PROGRAM SHOULD BE USED INSTEAD.                            *
+C                                                                              *
+C     THE PURPOSES OF THIS PROGRAM ARE:                                        *
+C         (I) TO CALCULATE MAXIMUM LIKELIHOOD ESTIMATES OF THE PARAMETERS      *
+C             OF A MODEL FOR CORRELATED ROC RATING-SCALE DATA BASED ON         *
+C             AN EFFECTIVE PAIR OF UNDERLYING BIVARIATE-NORMAL DECISION-       *
+C             VARIABLE DISTRIBUTIONS;                                          *
+C     AND:                                                                     *
+C                                                                              *
+C         (II) TO CALCULATE THE STATISTICAL SIGNIFICANCE OF THE DIFFERENCES    *
+C              BETWEEN THE TWO ESTIMATED ROC CURVES BY ANY ONE OF THREE        *
+C              DISTINCT STATISTICAL TESTS FOR CORRELATED ROC DATA:             *
+C                                                                              *
+C                  (1) A BIVARIATE CHI-SQUARE TEST OF THE SIMULTANEOUS         *
+C                      DIFFERENCES BETWEEN THE 'A' PARAMETERS AND BETWEEN      *
+C                      THE 'B' PARAMETERS OF THE TWO ROC CURVES. (NULL         *
+C                      HYPOTHESIS: THE DATA SETS AROSE FROM THE SAME           *
+C                      ROC CURVE -- THAT IS AX=AY AND BX=BY);                  *
+C                                                                              *
+C                  (2) A UNIVARIATE Z-SCORE TEST OF THE DIFFERENCE BETWEEN     *
+C                      THE AREAS UNDER THE TWO ROC CURVES. (NULL               *
+C                      HYPOTHESIS: THE DATA SETS AROSE FROM ROC CURVES WITH    *
+C                      EQUAL AREAS BENEATH THEM); OR                           *
+C                                                                              *
+C                  (3) A UNIVARIATE Z-SCORE TEST OF THE DIFFERENCE BETWEEN     *
+C                      THE TRUE-POSITIVE-FRACTIONS ON THE TWO ROC CURVES       *
+C                      AT A SELECTED FALSE-POSITIVE-FRACTION. (NULL            *
+C                      HYPOTHESIS: THE DATA SETS AROSE FROM ROC CURVES         *
+C                      HAVING THE SAME TPF AT THE SELECTED FPF).               *
+C                                                                              *
+C     THE REQUIRED DATA ARE TWO SETS OF CASES -- A SET OF ACTUALLY             *
+C     NEGATIVE CASES AND A SET OF ACTUALLY POSITIVE CASES -- WITH A PAIR       *
+C     OF CONFIDENCE RATINGS FOR EACH CASE. THE TWO RATINGS ASSOCIATED WITH     *
+C     EACH CASE COULD ARISE, FOR EXAMPLE, FROM A SINGLE OBSERVER IN            *
+C     RESPONSE TO A STIMULUS PROCESSED OR PRESENTED UNDER TWO CONDITIONS,      *
+C     FROM TWO OBSERVERS IN RESPONSE TO THE SAME STIMULUS, OR FROM             *
+C     OBSERVATIONS OF TWO DIFFERENT DIAGNOSTIC TESTS PERFORMED ON THE          *
+C     SAME PATIENT.                                                            *
+C                                                                              *
+C     *** NOTE ***  THE CASES USED AS INPUT MUST BE DISTINCT, BECAUSE          *
+C                   THIS PROGRAM ASSUMES THAT THE PAIRED CONFIDENCE-           *
+C                   RATING DATA AROSE FROM ONE OF TWO MULTINOMIAL              *
+C                   DISTRIBUTIONS  (CORRESPONDING TO 'ACTUALLY NEGATIVE'       *
+C                   AND 'ACTUALLY POSITIVE' CASES).  HENCE, THE INPUT DATA     *
+C                   MUST NOT INCLUDE MORE THAN ONE PAIR OF RATINGS FROM        *
+C                   EACH CASE.   IF MULTIPLE CONFIDENCE-RATING PAIRS           *
+C                   FROM EACH CASE ARE POOLED IN THE INPUT, THE PROGRAM        *
+C                   WILL OVERESTIMATE THE STATISTICAL SIGNIFICANCE             *
+C                   OF ANY APPARENT DIFFERENCE BETWEEN THE ROC CURVES,         *
+C                   THEREBY INVALIDATING THE STATISTICAL TEST.  WHEN           *
+C                   MULTIPLE CONFIDENCE-RATING PAIRS ARE AVAILABLE FROM        *
+C                   EACH CASE (FOR EXAMPLE, FROM MULTIPLE OBSERVERS WHO        *
+C                   READ IN BOTH OF TWO OBSERVATION CONDITIONS), THE           *
+C                   DATA SETS SHOULD BE RUN SEPARATELY (FOR EXAMPLE, FOR       *
+C                   EACH OBSERVER), OR THE GENERAL APPROACH DESCRIBED BY       *
+C                   SWETS AND PICKETT ('EVALUATION OF DIAGNOSTIC SYSTEMS:      *
+C                   METHODS FROM SIGNAL DETECTION THEORY.' ACADEMIC PRESS,     *
+C                   NEW YORK, 1982, CHAPTER 4) SHOULD BE EMPLOYED.             *
+C                                                                              *
+C     THIS 'CORROC2' PROGRAM DIFFERS FROM THE EARLIER 'CORROC' PROGRAM         *
+C     (WHICH IT REPLACES) IN THAT 'CORROC2' AUTOMATICALLY CREATES THE TWO      *
+C     DATA MATRICES THAT ARE REQUIRED BY THE MAXIMUM LIKELIHOOD                *
+C     ESTIMATION ALGORITHM. THOSE MATRICES HAD TO BE TABULATED BY THE          *
+C     USER OF 'CORROC'.                                                        *
+C                                                                              *
+C                                                                              *
+C     CORROC2 (LIKE CORROC) FIRST TREATS THE MARGINAL DATA SETS INDEPENDENTLY  *
+C     AND USES A MODIFIED DORFMAN PROGRAM (J. MATH. PSYCH., VOL.6, 1969,       *
+C     PP.487-496, AND VOL.9, 1972, PP. 128-139) TO OBTAIN MAXIMUM              *
+C     LIKELIHOOD ESTIMATES OF THE 'A', 'B', AND CATEGORY-BOUNDARY PARAMETERS   *
+C     SEPARATELY FOR EACH ROC CURVE.  TOGETHER WITH PRODUCT-MOMENT CORRELATION *
+C     COEFFICIENTS CALCULATED DIRECTLY FROM THE TWO DATA MATRICES, THESE       *
+C     ARE THEN USED AS INITIAL ESTIMATES IN A LATER PART OF THE ALGORITHM      *
+C     TO COMPUTE (BY THE METHOD OF SCORING) MAXIMUM LIKELIHOOD ESTIMATES       *
+C     OF THE PARAMETERS OF THE BIVARIATE-BINORMAL MODEL THAT IS ASSUMED TO     *
+C     UNDERLIE THE CORRELATED RATING DATA.                                     *
+C                                                                              *
+C     THE BIVARIATE-BINORMAL MODEL USED BY THIS PROGRAM AND THE STATISTICAL    *
+C     TESTS PERFORMED ARE DESCRIBED IN THE PAPER 'A NEW APPROACH FOR           *
+C     TESTING THE SIGNIFICANCE OF DIFFERENCES BETWEEN ROC CURVES MEASURED      *
+C     FROM CORRELATED DATA' BY METZ, WANG AND KRONMAN IN 'INFORMATION          *
+C     PROCESSING IN MEDICAL IMAGING' (F. DECONINCK, ED.).  THE HAGUE:          *
+C     MARTINUS NIJHOFF, 1984, PP. 432-445.                                     *
+C                                                                              *
+C     THE PORTIONS OF THIS PROGRAM (SUBROUTINES 'ESTM1', 'DORALF', AND         *
+C     THE SUBROUTINES THAT THEY CALL) ASSOCIATED WITH CALCULATING              *
+C     MAXIMUM LIKELIHOOD ESTIMATES OF THE ROC PARAMETERS OF THE                *
+C     MARGINAL DATA SETS -- WHICH ARE USED AS INITIAL ESTIMATES FOR            *
+C     THE BIVARIATE MODEL CALCULATION -- WHERE TAKEN (WITH SOME                *
+C     MODIFICATION) FROM THE PROGRAM 'RSCORE II' BY DONALD D. DORFMAN,         *
+C     DEPARTMENT OF PSYCHOLOGY, THE UNIVERSITY OF IOWA.                        *
+C                                                                              *
+C                ALGORITHM DESIGNED BY CHARLES E. METZ                         *
+C                  AND HELEN B. KRONMAN, 1979.                                 *
+C                PROGRAM WRITTEN BY HELEN B. KRONMAN, APRIL 1980.              *
+C                SUBSEQUENT REVISIONS BY PU-LAN WANG AND JONG-HER SHEN.        *
+C                IBM-PC VERSION DESIGNED BY C. E. METZ AND JONG-HER SHEN       *
+C                  AND WRITTEN BY JONG-HER SHEN, 1987-1988.                    *
+C                                                                              *
+C                DEPARTMENT OF RADIOLOGY AND THE FRANKLIN MCLEAN               *
+C                  MEMORIAL RESEARCH INSTITUTE                                 *
+C                THE UNIVERSITY OF CHICAGO, CHICAGO, ILLINOIS 60637            *
+C                                                                              *
+C     INQUIRIES OR COMMENTS CONCERING THIS PROGRAM SHOULD BE DIRECTED          *
+C     TO C.E. METZ AT THE ABOVE ADDRESS.                                       *
+C                                                                              *
+C                THIS WORK WAS SUPPORTED BY THE US DEPARTMENT                  *
+C                OF ENERGY UNDER CONTRACTS DE-AC02-80EV10359 AND               *
+C                DE-AC02-82ER60033 AND UNDER GRANT DE-FG02-A6ER60418.          *
+C                                                                              *
+C*******************************************************************************
+C                                                                               
+C                                                                               
+C                                                                               
+C                                                                               
+C                                                                               
+C                                                                               
+C*******************************************************************************
+C                                                                              *
+C                                                                              *
+C     INPUT/OUTPUT FILES ---                                                   *
+C                                                                              *
+C         INPUT FILES:                                                         *
+C               THIS PROGRAM ALLOWS THE USER TO INPUT DATA IN EITHER           *
+C               OF TWO WAYS:                                                   *
+C                  (A). FROM A PREVIOUSLY CREATED INPUT DATA FILE;             *
+C               OR                                                             *
+C                  (B). IN RESPONSE TO PROMPTS ON THE MONITOR.  WITH THIS      *
+C                       OPTION, THE PROGRAM ALLOWS THE USER TO CREATE A        *
+C                       FILE IN WHICH THE INPUT DATA WILL BE SAVED, SO THAT    *
+C                       IT CAN BE REUSED OR MODIFIED IN THE FUTURE.            *
+C                                                                              *
+C         OUTPUT FILE:                                                         *
+C               ALL OF THE OUTPUT INFORMATION LISTED BELOW (SEE OUTPUT ---,    *
+C               ITEMS 1 THROUGH 10) WILL BE SHOWN ON THE MONITOR               *
+C               (PRESS <CTRL>S TO SUSPEND SCROLLING; PRESS <CTRL>PRT-SC TO     *
+C               PRINT ALSO).  HOWEVER, THIS PROGRAM ALSO ALLOWS THE USER       *
+C               TO CREATE AN OUTPUT FILE IN WHICH WILL BE STORED ONLY THE      *
+C               INFORMATION NEEDED TO PLOT AND LABEL THE ROC CURVES            *
+C               (OUTPUT ITEMS 1, 3, 6, 8 AND 9) AND THE ESTIMATED DECISION-    *
+C               VARIABLE CORRELATIONS.                                         *
+C                                                                              *
+C                                                                              *
+C*******************************************************************************
+C
+C           REQUIRED INPUT AND DESCRIPTION OF OUTPUT:
+C
+C*******************************************************************************
+C                                                                              *
+C                                                                              *
+C     INPUT (IN RESPONSE TO SCREEN PROMPTS) ---                                *
+C                                                                              *
+C         1. THREE LINES FOR EACH OF TWO 'CONDITIONS', X AND Y, WITH THE       *
+C            FOLLOWING INFORMATION:                                            *
+C            (NOTE: EXAMPLES OF THE TWO 'CONDITIONS' ARE GIVEN IN REMARK (1)   *
+C            BELOW.)                                                           *
+C               LINE #1 AND #4 : A FREE-TEXT DESCRIPTION OF THE CONDITION      *
+C                                (UP TO 60 CHARACTERS).                        *
+C               LINE #2 AND #5 : THE NUMBER OF CATEGORIES FOR THE RATING DATA  *
+C                                FROM THAT CONDITION. (SEE REMARK (2) BELOW.)  *
+C               LINE #3 AND #6 : THE CATEGORY REPRESENTING THE STRONGEST       *
+C                                EVIDENCE OF POSITIVITY (E.G., "ABNORMALITY"   *
+C                                OR "SIGNAL PRESENCE"). (SEE REMARK (3) BELOW.)*
+C            FORMAT : FREE INPUT FORMAT, I.E., INPUT DATA CAN START            *
+C                     IN ANY COLUMN BETWEEN COLUMN 1 AND COLUMN 80.            *
+C         2. RATING-DATA PAIRS FOR ACTUALLY NEGATIVE CASES AND THEN FOR        *
+C            ACTUALLY POSITIVE CASES.                                          *
+C            FORMAT : ON A LINE FOR EACH PAIR, ENTER THE X-CONDITION RATING,   *
+C                     ONE OR MORE BLANK SPACES, AND THEN THE Y-CONDITION       *
+C                     RATING. ENTER ALL PAIRS FOR ACTUALLY NEGATIVE CASES      *
+C                     FIRST AND THEN ALL PAIRS FOR ACTUALLY POSITIVE CASES.    *
+C                     EACH OF THESE TWO INPUT SEQUENCES MUST BE TERMINATED     *
+C                     BY AN ASTERISK (*).                                      *
+C         3. AN ALPHABETIC CODE WORD INDICATING THE STATISTICAL TEST DESIRED:  *
+C               FOR THE BIVARIATE TEST, ENTER: BIVARIATE                       *
+C               FOR THE AREA TEST, ENTER: AREA                                 *
+C               FOR THE TPF TEST, ENTER: TPF                                   *
+C            FORMAT : FREE INPUT FORMAT. (NOTE: THE COMPUTER WILL READ ONLY    *
+C                     THE FIRST CHARACTER OF THE INPUT WORD.)                  *
+C            IF 'TPF' WAS ENTERED ABOVE, INPUT ON AN ADDITIONAL LINE THE       *
+C            FPF VALUE ( GREATER THAN 0.0 AND LESS THAN 1.0 ) AT WHICH THE     *
+C            TPF'S ARE TO BE COMPARED. OMIT THIS LAST INPUT LINE IF THE        *
+C            BIVARIATE TEST OR THE AREA TEST WAS REQUESTED.                    *
+C            FORMAT : FREE INPUT FORMAT.                                       *
+C                                                                              *
+C                                                                              *
+C         INPUT EXAMPLE FOR TPF TEST:                                          *
+C         ---------------------------------------------------------            *
+C             TYPICAL EXAMPLE OF 5-CATEGORY DATA--X                            *
+C         5                                                                    *
+C               5                                                              *
+C         TYPICAL EXAMPLE OF 5-CATEGORY DATA--Y                                *
+C           5                                                                  *
+C           5                                                                  *
+C            3 1                                                               *
+C          2 1                                                                 *
+C             3 5                                                              *
+C            ...  (AND SO ON)                                                  *
+C                *                                                             *
+C            5 2                                                               *
+C          1 5                                                                 *
+C          3 4                                                                 *
+C          ... (AND SO ON)                                                     *
+C         *                                                                    *
+C         TPF                                                                  *
+C           0.10                                                               *
+C         ---------------------------------------------------------            *
+C                                                                              *
+C        REMARKS CONCERNING INPUT:                                             *
+C            1. THE TWO 'CONDITIONS' (X AND Y) CAN REPRESENT DIFFERENT         *
+C               READINGS OF THE SAME STIMULI (E.G., IMAGES) BY A SINGLE        *
+C               OBSERVER (PERHAPS UNDER DIFFERENT READING, DISPLAY,            *
+C               OR DATA-MANIPULATION CONDITIONS); DIFFERENT                    *
+C               OBSERVERS WHO READ THE SAME SET OF IMAGES; READINGS            *
+C               OF DIFFERENT IMAGES OF THE SAME SET OF PATIENTS; ETC.          *
+C            2. THE NUMBERS OF CATEGORIES (LINE #2 AND LINE #5) CAN BE 3       *
+C               TO 10 AND NEED NOT BE THE SAME FOR THE TWO CONDITIONS.         *
+C            3. THE INPUT VALUES ON LINE #3 AND LINE #6 INDICATE               *
+C               WHETHER THE HIGHEST OR LOWEST NUMBERED CATEGORY REPRESENTS     *
+C               THE STRONGEST EVIDENCE OF POSITIVITY (E.G., 'ABNORMALITY')     *
+C               IN THE CORRESPONDING CONDITION. IF HIGHER-NUMBERED CATEGORIES  *
+C               REPRESENT STRONGER EVIDENCE OF POSITIVITY (E.G.,               *
+C               'ABNORMALITY'), THEN THIS VALUE SHOULD BE EQUAL TO THE TOTAL   *
+C               NUMBER OF CATEGORIES INPUT ON THE PREVIOUS LINE (LINE #2 AND   *
+C               LINE #5, RESPECTIVELY). ALTERNATIVELY, IF LOWER-NUMBERED       *
+C               CATEGORIES REPRESENT STRONGER EVIDENCE OF POSITIVITY, THEN     *
+C               THIS VALUE SHOULD BE '1'.                                      *
+C                                                                              *
+C                                                                              *
+C                                                                              *
+C                                                                              *
+C      OUTPUT ---                                                              *
+C                                                                              *
+C          1. HEADING, WITH A DESCRIPTION OF THE STATISTICAL TEST TO           *
+C             BE EMPLOYED AND THEN, FOR EACH OF THE TWO CONDITIONS,            *
+C             A DESCRIPTION OF THE CONDITION AND OF THE RATING SCALE           *
+C             USED FOR THAT CONDITION.                                         *
+C          2. RATING-DATA MATRICES FOR THE ACTUALLY NEGATIVE AND ACTUALLY      *
+C             POSITIVE CASES, RESPECTIVELY. DIFFERENT COLUMNS IN EACH DATA     *
+C             MATRIX INDICATE DIFFERENT RATINGS FROM CONDITION X, WHILE        *
+C             DIFFERENT ROWS INDICATE DIFFERENT RATINGS FROM CONDITION Y.      *
+C             IN EITHER MATRIX, EACH ELEMENT REPRESENTS THE NUMBER OF PAIRED   *
+C             READINGS (E.G., FROM A COMMON IMAGE OR A COMMON PATIENT)         *
+C             THAT PRODUCED THE PAIR OF RATINGS INDICATED BY THE               *
+C             ELEMENT'S POSITION.                                              *
+C          3. OBSERVED OPERATING POINTS FOR THE TWO CONDITIONS, RESPECTIVELY.  *
+C          4. INITIAL ESTIMATES OF THE PARAMETER VALUES, WITH THE              *
+C             LOG-LIKELIHOOD OF THE DATA.                                      *
+C             FOR EACH CONDITION, 'A' REPRESENTS THE 'Y-INTERCEPT'             *
+C             AND 'B' REPRESENTS THE SLOPE OF THAT CONDITION'S ROC CURVE WHEN  *
+C             IT IS PLOTTED ON NORMAL-DEVIATE AXES.  R(NEGATIVE CASES) AND     *
+C             R(POSITIVE CASES) REPRESENT THE CORRELATION COEFFICIENTS OF      *
+C             THE EFFECTIVE UNDERLYING BIVARIATE-NORMAL DECISION-VARIABLE      *C             DISTRIBUTIONS FOR ACTUALLY NEGATIVE AND ACTUALLY POSITIVE        *
+C             CASES, RESPECTIVELY. T(I) AND U(J) REPRESENT THE CUT-OFFS        *
+C             ON THE DECISION AXES FOR CONDITION X AND CONDITION Y,            *
+C             RESPECTIVELY, EXPRESSED IN STANDARD DEVIATIONS OF THE            *
+C             EFFECTIVE ACTUALLY NEGATIVE DISTRIBUTION; THEY ARE LISTED        *
+C             FROM LEFT TO RIGHT AND FROM LOWER TO HIGHER ON THE TWO           *
+C             DECISION-VARIABLE AXES, RESPECTIVELY, WITH THE MEAN OF THE       *
+C             ACTUALLY POSITIVE DISTRIBUTION ASSUMED TO BE ABOVE AND TO THE    *
+C             RIGHT OF THE MEAN OF THE ACTUALLY NEGATIVE DISTRIBUTION.         *
+C          5. THE NUMBER OF ITERATIONS EMPLOYED.                               *
+C          6. FINAL ESTIMATES OF THE PARAMETER VALUES, WITH THE CORRESPONDING  *
+C             LOG-LIKELIHOOD OF THE DATA.                                      *
+C          7. VARIANCE-COVARIANCE MATRIX FOR THE FINAL PARAMETER ESTIMATES.    *
+C             (ENTRIES ASSOCIATED WITH THE CUT-OFF PARAMETERS ARE NOT OUTPUT   *
+C             BY THIS IBM-PC VERSION OF 'CORROC2' BUT ARE PRINTED BY THE       *
+C             MINICOMPUTER/MAINFRAME VERSION.)                                 *
+C          8. TPF VALUES FOR CONDITION X AND CONDITION Y ON THE FITTED ROC     *
+C             CURVES, AT SELECTED FPF VALUES.                                  *
+C          9. THE AREAS ('A SUB Z') UNDER THE FITTED ROC CURVES FOR THE TWO    *
+C             CONDITIONS, WITH ESTIMATED STANDARD DEVIATIONS AND CORRELATION.  *
+C         10. ONE OF THREE TEST STATISTIC VALUES, WITH ASSOCIATED              *
+C             SIGNIFICANCE LEVELS:                                             *
+C                -- THE COMPUTED 'BIVARIATE CHI-SQUARE TEST' STATISTIC         *
+C                   VALUE WITH ITS CORRESPONDING P-LEVEL.                      *
+C                -- THE COMPUTED 'AREA TEST' STATISTIC VALUE WITH              *
+C                   CORRESPONDING TWO-TAILED AND ONE-TAILED P-LEVELS.          *
+C                -- THE COMPUTED 'TRUE-POSITIVE FRACTION TEST' STATISTIC       *
+C                   VALUE AT THE SPECIFIED FALSE-POSITIVE FRACTION,            *
+C                   WITH CORRESPONDING TWO-TAILED AND ONE-TAILED               *
+C                   P-LEVELS.                                                  *
+C                                                                              *
+C          REMARKS CONCERNING OUTPUT:                                          *
+C            1. IT IS CRUCIALLY IMPORTANT TO NOTE THAT THIS PROGRAM            *
+C               IS NOT -- REPEAT, IS NOT -- APPROPRIATE FOR POOLED             *
+C               CONFIDENCE-RATING PAIRS (SEE NOTE ON FIRST PAGE).              *
+C            2. THIS PROGRAM WILL CHECK BOTH MARGINAL DATA SETS FOR            *
+C               DEGENERACY. DEGENERATE DATA SETS ARE THOSE FOR WHICH           *
+C               AN EXACT FIT TO THE OBSERVED OPERATING POINTS IS PROVIDED      *
+C               BY A BINORMAL ROC CURVE AND ASSOCIATED CUT-OFFS WITH           *
+C               ONE OR MORE INFINITE PARAMETER VALUES, SO THAT THE             *
+C               ITERATIVE CALCULATIONS CANNOT CONVERGE.  IF EITHER             *
+C               MARGINAL DATA SET IS DEGENERATE, THIS PROGRAM WILL OUTPUT      *
+C               A MESSAGE DESCRIBING THE KIND OF DEGENERACY FOUND AND THE      *
+C               CORRESPONDING EXACT-FIT ROC, AND THEN ABORT EXECUTION OF       *
+C               THE BIVARIATE DATA SET.                                        *
+C                                                                              *
+C                                                                              *
+C*******************************************************************************
+

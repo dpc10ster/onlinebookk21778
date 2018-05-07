@@ -1,0 +1,12 @@
+{
+    "dialog-state" : {
+        "caseSensitive" : false,
+        "filePatterns" : [
+            "*.r",
+            "*.R"
+        ],
+        "path" : "~/onlinebookk21778/Ch11/software",
+        "query" : "ReadLrcFile",
+        "regex" : false
+    }
+}

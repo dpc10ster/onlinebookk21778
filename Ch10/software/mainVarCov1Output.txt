@@ -1,0 +1,18 @@
+> source(...)
+data file =  CXRinvisible3-20mm.xlsx 
+number of treatments =  4 
+number of non-diseased cases =  52 
+number of diseased cases =  106 
+reader =  1 
+OR variance components using jackknife resampling 
+Variance =  0.001614554 
+Cov1 =  0.0004970402 
+rho =  0.3078498 
+OR variance components using bootstrap resampling 
+Variance =  0.001575106 
+Cov1 =  0.0005271459 
+rho =  0.3346733 
+OR variance components using DeLong method 
+Variance =  0.001600124 
+Cov1 =  0.0004926574 
+rho =  0.3078871 

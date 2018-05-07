@@ -1,0 +1,105 @@
+> retDbmSongA2  <- DBMHAnalysis(frocData, fom = "SongA2")
+> print(retDbmSongA2)
+$fomArray
+        Rdr - 1 Rdr - 3 Rdr - 4 Rdr - 5
+Trt - 4 0.90155 0.83035 0.78210 0.87420
+Trt - 5 0.83370 0.77135 0.74935 0.84665
+
+$msTable
+  Source          SS   DF         MS
+1      T   0.8756281    1 0.87562806
+2      R   2.8645387    3 0.95484623
+3      C  95.4468989  199 0.47963266
+4     TR   0.1159907    3 0.03866356
+5     TC  20.1631736  199 0.10132248
+6     RC  86.1276751  597 0.14426746
+7    TRC  60.3680772  597 0.10111906
+8  Total 265.9619822 1599         NA
+
+$msTableEachTrt
+  Source  DF         4         5
+1      R   3 0.5469843 0.4465255
+2      C 199 0.2764605 0.3044947
+3     RC 597 0.1052326 0.1401539
+
+$varComp
+                 varComp
+Var(R)      2.182586e-03
+Var(C)      4.189522e-02
+Var(T*R)   -3.122775e-04
+Var(T*C)    5.085572e-05
+Var(R*C)    2.157420e-02
+Var(Error)  1.011191e-01
+
+$fValueRRRC
+[1] 22.52884
+
+$ddfRRRC
+[1] 3.031651
+
+$pValueRRRC
+[1] 0.01732457
+
+$ciDiffTrtRRRC
+  Treatment  Estimate      StdErr       DF        t   Pr > t   CI Lower   CI Upper
+1     4 - 5 0.0467875 0.009857356 3.031651 4.746455 1.982675 0.01560147 0.07797353
+
+$ciAvgRdrEachTrtRRRC
+  Treatment      Area     StdErr       DF  CI Lower  CI Upper
+1         4 0.8470500 0.02996273 5.172221 0.7707934 0.9233066
+2         5 0.8002625 0.02763300 5.614628 0.7315059 0.8690191
+
+$fValueFRRC
+[1] 8.641992
+
+$ddfFRRC
+[1] 199
+
+$pValueFRRC
+[1] 0.003673688
+
+$ciDiffTrtFRRC
+  Treatment  Estimate    StdErr  DF        t   Pr > t   CI Lower   CI Upper
+1     4 - 5 0.0467875 0.0159156 199 2.939727 1.996326 0.01540264 0.07817236
+
+$ciAvgRdrEachTrtFRRC
+  Treatment      Area     StdErr  DF  CI Lower  CI Upper
+1         4 0.8470500 0.01858966 199 0.8103920 0.8837080
+2         5 0.8002625 0.01950944 199 0.7617907 0.8387343
+
+$ssTableEachReader
+  Source  DF          1        3          4           5
+1      T   1  0.4603623  0.34810  0.1072563  0.07590025
+2      C 199 36.0798757 47.68004 59.0192267 38.79543521
+3     TC 199 16.3035945 21.71913 28.9263618 13.58216015
+
+$msTableEachReader
+  Source  DF          1         3         4          5
+1      T   1 0.46036225 0.3481000 0.1072563 0.07590025
+2      C 199 0.18130591 0.2395982 0.2965790 0.19495194
+3     TC 199 0.08192761 0.1091414 0.1453586 0.06825206
+
+$ciDiffTrtEachRdr
+  Reader Treatment Estimate     StdErr  DF         t   Pr > t     CI Lower   CI Upper
+1      1     4 - 5  0.06785 0.02862300 199 2.3704713 1.981279  0.011406689 0.12429331
+2      3     4 - 5  0.05900 0.03303655 199 1.7859006 1.924362 -0.006146645 0.12414665
+3      4     4 - 5  0.03275 0.03812592 199 0.8589956 1.608624 -0.042432664 0.10793266
+4      5     4 - 5  0.02755 0.02612510 199 1.0545416 1.707086 -0.023967553 0.07906755
+
+$fValueRRFC
+[1] 22.64737
+
+$ddfRRFC
+[1] 3
+
+$pValueRRFC
+[1] 0.01761501
+
+$ciDiffTrtRRFC
+  Treatment  Estimate      StdErr DF        t   Pr > t  CI Lower  CI Upper
+1     4 - 5 0.0467875 0.009831526  3 4.758925 1.982385 0.0154992 0.0780758
+
+$ciAvgRdrEachTrtRRFC
+  Treatment      Area     StdErr DF  CI Lower  CI Upper
+1         4 0.8470500 0.02614824  3 0.7638346 0.9302654
+2         5 0.8002625 0.02362534  3 0.7250761 0.8754489

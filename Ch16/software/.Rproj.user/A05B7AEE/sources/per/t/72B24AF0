@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1512437199743.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2908387079",
+    "id" : "72B24AF0",
+    "lastKnownWriteTime" : 1512437269,
+    "last_content_update" : 1512437269484,
+    "path" : "~/onlinebookk21778/Ch16/software/mainBinomialExample2.R",
+    "project_path" : "mainBinomialExample2.R",
+    "properties" : {
+        "cursorPosition" : "30,50",
+        "scrollLine" : "4"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

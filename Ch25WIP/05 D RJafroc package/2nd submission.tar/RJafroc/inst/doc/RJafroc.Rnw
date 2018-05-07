@@ -1,0 +1,2351 @@
+% \VignetteEngine{knitr::knitr}
+% \VignetteIndexEntry{Analysis of Data Acquired Using ROC Paradigm and Its Extensions}
+% \VignetteDepends{RJafroc}
+% \VignettePackage{RJafroc}
+\documentclass[article]{jss}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%declarations for jss.cls %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% almost as usual
+\author{Dev P. Chakraborty\\ University of Pittsburgh \And 
+Xuetong Zhai\\ University of Pittsburgh}
+\title{Analysis of Data Acquired Using ROC Paradigm and Its Extensions}
+
+%% for pretty printing and a nice hypersummary also set:
+\Plainauthor{Dev Chakraborty, Xuetong Zhai} %% comma-separated
+\Plaintitle{Analysis of Data Acquired Using ROC Paradigm and Its Extensions} %% without formatting
+% %\Shorttitle{\pkg{foo}: A Capitalized Title} %% a short title (if necessary)
+
+%% an abstract and keywords
+\Abstract{
+A common task in medical imaging is assessing whether a new imaging
+system or device is an improvement over an existing one. Observer
+performance methodology, such as receiver operating characteristic
+(ROC) analysis, is widely used for this purpose and ROC studies are often
+required for regulatory approval of new devices. The purpose of this
+work is to describe \pkg{RJafroc}, which implements
+analysis of data acquired using the ROC paradigm and its location
+specific extensions. It is an enhanced implementation of existing
+Windows JAFROC (jackknife alternative free-response
+ROC, V4.2.1, \url{http://www.devchakraborty.com}) software. In the ROC paradigm
+the radiologist rates each image for confidence in presence of disease.
+In a common study design a number of radiologists (readers) rate images in two
+or more treatments (imaging systems), and the objective is to determine
+the significances of the inter-treatment differences between reader-averaged
+FOMs. In the free-response ROC paradigm the reader marks the locations
+of suspicious regions and rates each region for confidence in presence
+of disease, and credit for detection is only given if a true lesion
+is correctly localized. In the region of interest (ROI) paradigm each
+image is divided into a number of ROIs and the reader rates each ROI.
+Each paradigm requires definition of a valid FOM that rewards correct
+decisions and penalizes incorrect ones and specialized significance
+testing procedure are applied. The package reads data in all currently
+used data formats including Excel. Significance testing uses two models
+in widespread use. Included are tools
+for (1) calculating a variety of free-response FOMs; (2) ROC sample
+size estimation for planning a future study based on pilot data; (3)
+viewing empirical operating characteristics in ROC and free-response
+paradigms; (4) producing formatted report files; and (5) saving data 
+files in appropriate formats for analysis with alternate software.
+In addition to open-source access to the functions,
+the package includes a graphical interface for users already familiar 
+with the Windows software, who simply wish to run the program.
+}
+\Keywords{medical imaging, observer performance, assessment methodology, ROC, FROC, JAFROC software, \proglang{R}}
+\Plainkeywords{medical imaging, observer performance, assessment methodology, ROC, FROC, JAFROC software, R} %% without formatting
+%% at least one keyword must be supplied
+
+%% publication information
+%% NOTE: Typically, this can be left commented and will be filled out by the technical editor
+%% \Volume{50}
+%% \Issue{9}
+%% \Month{June}
+%% \Year{2012}
+%% \Submitdate{2012-06-04}
+%% \Acceptdate{2012-06-04}
+
+%% The address of (at least) one author should be given
+%% in the following format:
+\Address{
+Dev P. Chakraborty\\
+Professor\\
+Department of Radiology\\  
+University of Pittsburgh\\
+FARP Bldg, Room 212\\
+3362 Fifth Ave\\
+Pittsburgh, PA 15213\\
+United States of America\\
+Telephone: +01/412/480-7318\\
+E-mail: \email{dpc10ster@gmail.edu}\\
+URL: \url{http://www.devchakraborty.com}
+}
+%% It is also possible to add a telephone and fax number
+%% before the e-mail in the following format:
+%% Telephone: +43/512/507-7103
+%% Fax: +43/512/507-2851
+
+%% for those who use Sweave please include the following line (with % symbols):
+
+
+%% end of declarations %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+<<setup, include=FALSE, cache=FALSE>>=
+library("knitr")
+render_sweave()
+# set global chunk options
+opts_chunk$set(prompt=TRUE)
+options(replace.assign=TRUE, width=90, prompt="R> ")
+@
+
+\usepackage{mathtools}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{verbatim}
+\usepackage{graphicx}
+%\usepackage{subfigure}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage[inline]{enumitem}
+\usepackage{float}
+\usepackage[caption]{subfig}
+\usepackage{multirow}
+\usepackage{tabulary}
+\usepackage{pbox}
+\captionsetup[table]{skip=10pt}
+
+\captionsetup[subfigure]{subrefformat=simple,labelformat=simple,listofformat=subsimple}
+\renewcommand\thesubfigure{(\alph{subfigure})}
+
+\begin{document}
+
+
+%% include your article here, just as usual
+%% Note that you should use the \pkg{}, \proglang{} and \code{} commands.
+
+\section[{Introduction}]{Introduction}
+A common task in medical imaging is assessing whether a new imaging
+system is an improvement over an existing one. Observer performance
+measurements, widely used for this purpose, require data collection
+and analyses methods that fall under the rubric of what is loosely
+termed ``ROC analysis'', where ROC is an abbreviation for Receiver
+Operating Characteristic \citep{MetzROCMeth1986}. ROC analysis is a specialized branch
+of statistics that is important in diagnostic imaging, where new imaging
+technologies and the accuracy of radiologist interpretations need to be assessed.
+The Food and Drug Administration (FDA), which regulates medical imaging
+devices, requires ROC studies as part of the device approval process
+(see document ``Statistical Guidance on Reporting Results from Studies
+Evaluating Diagnostic Tests'' available at \url{http://www.fda.gov/RegulatoryInformation/Guidances}).
+There are, conservatively, at least 1000 publications describing medical imaging ROC
+studies and a seminal paper \citep{MetzROCMeth1986} by the late Prof. C.E. Metz has
+been cited over 1800 times. Since they involve numbers of radiologists
+interpreting large number of images in different modalities, ROC studies
+can be  expensive to conduct. For example \citep{PisGatDiagnPerf2005}, the Digital
+Mammography for Imaging Screening Trial (DMIST) cost about \$30 million
+(this study involved about 50,000 asymptomatic women at 33 mammography
+centers, and each mammogram was interpreted by two radiologists per
+mammography center). More typical ROC studies proposed in National Institutes of 
+Health (NIH) grant applications are budgeted in the hundreds of thousands of dollars 
+and often take years to complete. Consequently, there is much interest in optimizing methodology
+for analyzing ROC studies and its extensions, and four websites currently disseminate
+software for analyzing such studies: the University of Chicago has
+a site for ROC analysis software (\url{http://metz-roc.uchicago.edu/})
+as does the University of Iowa (\url{http://perception.radiology.uiowa.edu/})
+and the FDA (\url{https://code.google.com/p/imrmc/}); Windows software called 
+JAFROC (jackknife alternative free-response ROC) \citep{jafrocsftwr}, which can analyze ROC studies and 
+its extensions \citep{ChaBerObser2004,ChakraABrief2013}, 
+is available at \url{http://www.devchakraborty.com}. Software from the University
+of Iowa and University of Chicago websites have been used in several hundred publications 
+(Professor Kevin Berbaum, University of Iowa, personal communication, ca 2014). JAFROC
+has been used in 78 publications: the list is viewable at
+\url{http://www.devchakraborty.com/JafrocApplications.pdf}.
+The purpose of this work is to describe \pkg{RJafroc} Version 0.1.0,
+which is an enhanced implementation of JAFROC.\footnote{A number 
+of ROC packages are currently available on CRAN and Bioconductor: 
+\pkg{ROCR} \citep{SingSandROCRVisu2005}, 
+\pkg{pROC} \citep{robin2011proc}, \pkg{ROCwoGS} \citep{ROCwoGS}, 
+\pkg{ROCt} \citep{ROCt} and \pkg{ROC632} \citep{ROC632}. 
+These are intended for classifier performance
+evaluation and visualization, in the machine learning,
+pattern recognition, artificial intelligence and genetics areas. 
+None of them relate to medical imaging applications addressed in the software available on the 4 
+previously mentioned websites.}
+In this section we introduce terminology
+used in the \code{RJafroc-package} page of the documentation that
+accompanies this paper. For details regarding basics of ROC methodology, reviews of this field may be consulted
+\citep{MetzBasPrin1978,MetzROCMeth1986,MetzSomePra1989,WagnBeidAsseOfMedi2002,WagnMetzAssOfMedi2007,KunBerRece2008,MetzROCAna2008}.
+
+In an ROC study the radiologist is shown images of \emph{patients} (\emph{images}
+and \emph{cases} are used interchangeably as synonyms for patients), the radiologist is ``blinded'',
+of course, to the true disease states, and the radiologist's task
+is to \emph{rate} each patient for confidence in presence or absence
+of disease. The rating \emph{r} is typically on an ordinal scale, with
+higher values representing increasing confidence in presence of disease. 
+Typically 5 or 6 integer ratings are used but the ratings
+could have higher precision \citep{Metz1998}. With a 6 rating scale a 1-rating would
+correspond to high confidence that patient is non-diseased and a 6-rating
+would correspond to high confidence that patient is diseased. The
+normalized counts in the different ratings bins, cumulated separately
+for actually non-diseased and actually diseased patients, can be used
+to construct an \emph{operating point}. For example, the cumulated
+counts in diseased ratings bins 3, 4 and 5, divided by the number
+of actually diseased images, yields \emph{true positive fraction}
+$TPF_{3+}$, where $TPF$ is the ordinate of the ROC plot, and the
+corresponding cumulated counts for non-diseased images, divided by
+the number of non-diseased images, yields \emph{false positive
+fraction} $FPF_{3+}$, where $FPF$ is the abscissa of the ROC plot. True positive fraction is synonymous with
+\emph{sensitivity} and the complement of false positive fraction is
+synonymous with \emph{specificity}, so the ROC curve is a plot of
+$sensitivity$ vs. $1-specificity$. It can be seen
+that as long as no bin has zero counts for both non-diseased and diseased
+images, an \emph{$R$} rating ROC study will yield \emph{$R-1$} non-trivial
+operating points $\left\{ {FPF_{r+},TPF_{r+};r=2,3,...,R}\right\} $.
+The origin $(0,0)$ and the upper right corner $(1,1)$ are trivial
+operating points, belonging to any ROC dataset, obtained by counting
+none and all of the binned ratings, respectively. The empirical ROC
+curve is defined by connecting neighboring operating points (including
+the trivial ones) with straight lines. While several curve-fitting
+methods are available \citep{DorAlfMaxLike1968,DorAlfMaxEst1969,DorBerRSCORE1986,DorBerProp1997,PanMetzTheProp1997,MetPanProBin1999,DorBerAConta2000,PesMetzReliAnd2007} 
+and have their merits, the trapezoidal
+area under the empirical ROC is frequently used as a non-parametric
+FOM for quantifying observer performance \citep{HanMcNTheMean1982}.
+It can be shown to be equivalent to the Mann-Whitney-Wilcoxon 2-sample
+U-statistic \citep{WilcoxonIndiComp1945,MannWhitOnATest1947}. ROC studies are typically conducted
+with about 50/50 or more non-diseased/diseased patients. The patients
+are imaged in two or more imaging systems (termed \emph{modalities}
+or \emph{treatments}) and the images are rated by a number of radiologists
+(typically about 5 to 10). This type of fully crossed study design
+is termed multiple reader multiple case (MRMC) and, although methods
+are available for partially paired interpretations \citep{MetHerStatComp1998,ObuchoReduceThe2009}, MRMC
+studies are the focus of this work.
+
+A limitation of the ROC paradigm is that it acquires a single rating
+per image, where the rating applies to the image as a whole, not to
+any specific region(s) in the image. Typically, disease is manifested
+by the presence of localized diseased regions or \emph{lesions}. For example, 
+lung cancer often presents as localized malignant nodules found on chest x-rays 
+or computed tomography (CT) scans of the chest. Ignoring localization can result in an overestimate 
+of true performance \citep{ObuMazBiasUnder2010};
+for example, suppose a true lesion on a diseased case is missed and
+a disease-free region is perceived as abnormal by the radiologist
+- the two mistakes would effectively cancel each other and the event
+would be credited as a true positive at the level of confidence associated
+with the disease-free region. This and othe ambiguities \citep{BunchHamAFree1978} associated with neglect of location information has been the reason for research on extending ROC analysis to location-specific interpretations.
+
+There are two data collection paradigms
+that allow for localization information to be collected to different
+extents (a third important paradigm \citep{StarMetzVisuDete1975,StarMetzCommOn1977,SwenJudyDeteOfNois1981,SwessonUnifMeasure1996}, 
+termed \emph{location ROC} (LROC) is not included in this description, as it is not currently
+implemented in any of the websites mentioned previously). In the \emph{free-response}
+paradigm \citep{EgaGreOperat1961,MillerTheFROC1969,BunchHamAFree1978} the radiologist \emph{marks} and \emph{rates} regions that are
+suspicious for disease. A mark is classified as \emph{lesion localization}
+(LL) if it successfully locates an actual lesion to within clinically
+acceptable spatial accuracy, or \emph{non-lesion localization} (NL)
+otherwise (usage of ROC-specific terms like true positive and false
+positive in the FROC (free-response ROC), LROC or ROI contexts can lead to confusion). Unmarked lesions
+are assigned the --infinity rating. By treating the rating of the
+highest rated mark on a \emph{non-diseased} image (or --infinity if
+the image has no marks) as its \emph{inferred} FP rating, it is possible
+to define an inferred FPF quantity that is analogous to true FPF obtained
+in an actual ROC study. By cumulating LL events and dividing by the
+total number of lesions it is possible to define a \emph{lesion localization
+fraction} (LLF) quantity that is analogous to TPF, but because it requires correct localization, 
+may not reach unity, even when all ratings are cumulated. A plot of LLF along the ordinate vs. FPF
+is defined as the \emph{alternative} FROC, or AFROC \citep{ChakraMax1989,ChaWinFree1990}, where it
+is understood that the uppermost operating point, obtained by cumulating
+all the marks, is to be connected to (1,1) by a dotted line. While
+inaccessible to the observer, the area under the dotted line needs to be taken into account in
+the definition of the area under the AFROC as a valid FOM \citep{ChakraASear2006,ChakraROC2006}; 
+essentially it gives credit for unmarked non-diseased cases and penalizes for unmarked lesions). Non-lesion localization
+fraction (NLF) is defined as the cumulated number of NLs divided by
+the total number of cases. The FROC plot is defined as that of LLF
+along the ordinate vs. NLF \citep*{BunchHamAFree1978,ChaBreDigital1986,NikHicSimPul1986,BarSabAComp1989}. 
+By treating the rating of the highest rated mark on a diseased image (or --infinity if
+the image has no marks) as its inferred TP rating, it is possible
+to define an inferred TPF. The plot of inferred TPF vs. inferred FPF
+is the inferred ROC curve. Regarding the highest rated NL mark on
+\emph{any} image as an inferred FP1 rating (the 1 denotes that NL
+marks on diseased cases could be contributing to this FP-like rating)
+and the corresponding AFROC1 plot is that of LLF vs. FPF1. By assigning
+clinically relevant weights to different lesions on the same diseased
+image, it is possible to define weighted LLF, weighted AFROC and weighted
+AFROC1 plots (the weights, which add up to unity on any diseased image,
+are the relative importances of finding the lesions: from the clinical
+perspective all lesions are not alike; some are more aggressive than
+others and therefore more important to find at an early stage). With the exception of
+the FROC, the trapezoidal areas under all of these curves qualify
+as valid FOMs (a valid FOM is one that rewards
+good decisions and penalizes bad decisions, where good and bad are
+defined with respect to patient outcome). That the area under the
+FROC is a particularly poor FOM can be appreciated from
+the fact that a perfect observer's FROC curve would be a vertical
+line extending from (0,0) to (0,1), for which the area measure would
+be zero.
+
+In the \emph{region of interest} (ROI) paradigm \citep{ObuLieDataAna2000} each image
+is divided into Q regions of interest (typically Q is about 4) where
+each region is either non-diseased or diseased, and the reader gives
+an ROC-like rating to each region. Regarding each of the regions as
+a mini-image, it is possible to define ROC-like quantities TPF' and
+FPF', where the primes distinguish them from true FPF and TPF. For
+example, FPF' and TPF' can be defined for a dataset containing only
+diseased images, for which it would be impossible to define FPF. The
+data collection paradigms are summarized in Table~\ref{tab:terminology}.
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{>{\centering\arraybackslash}m{0.2\linewidth}>{\centering\arraybackslash}m{0.2\linewidth}>{\centering\arraybackslash}m{0.2\linewidth}>{\centering\arraybackslash}m{0.2\linewidth}}
+    \toprule
+    Data collection paradigm & Operating characteristic(s) & FOM   & Terminology \\
+    \midrule
+    Receiver operating characteristic & ROC = TPF vs. FPF & Wilcoxon & AUC \\ \hline
+          & AFROC = LLF vs. FPF & Trapezoidal area under AFROC & JAFROC, weighted JAFROC \\ \cline{2-4}
+    Free-response & AFROC1 = LLF vs. FPF1 & Trapezoidal area under AFROC1 & JAFROC1, weighted JAFROC1 \\ \cline{2-4}
+          & FROC = LLF vs. NLF & \multicolumn{2}{c}{Not recommended} \\ \cline{2-4}
+          & Inferred ROC & Trapezoidal area under inferred ROC & AUC \\ \hline
+    Region of interest & ROC'=TPF' vs. FPF' & Trapezoidal area under ROC' & AUC' \\
+    \bottomrule
+    \end{tabular}%
+    \caption{Data collection, paradigms and associated operating characteristics,
+FOMs and terminology. [AUC = area under the ROC curve, plot of TPF vs. FPF; 
+AUC' = area under the ROC' curve, plot of TPF' vs. FPF']}
+  \label{tab:terminology}%
+\end{table}%
+
+
+Analysis of the data starts with estimation, for each treatment
+- reader combination, of the FOM. One object of the analysis
+is to determine the significance of the reader-averaged differences
+in FOMs between pairs of modalities. While several significance-testing
+methods have been proposed, see Table~\ref{tab:softava}, we focus on two that are
+easily accessible and consequently in widespread use: the \emph{Dorfman-Berbaum-Metz}
+(DBM) method \citep{DorBerROC1992} and the \emph{Obuchowski-Rockette} (OR) method \citep{ObuRocHypoTest1995},
+both of which have been significantly improved by contributions by
+Hillis, and are henceforth referred to as DBMH and ORH, respectively.
+A third method \citep{GallasOneShot2006,GasBanAFram2009} often termed a mechanistic or first-principles
+approach to MRMC analysis, is also available online, that yields independent
+estimates of variability parameters used in DBMH and ORH analyses,
+in addition to its own estimates. \emph{All significance-testing methods
+are applicable to any scalar FOM}. 
+
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{>{\centering\arraybackslash}m{0.2\linewidth}>{\centering\arraybackslash}m{0.2\linewidth}>{\centering\arraybackslash}m{0.2\linewidth}>{\centering\arraybackslash}m{0.15\linewidth}}
+    \toprule
+    Significance testing methods & Online software name and website & Supported data collection paradigms & Supported FOMs \\
+    \midrule
+    DBMH, ORH & OR-DBM MRMC \citep{ordbmmrmcsftwr} &  & Wilcoxon and parametric fits derived AUCs, and others \\ \cline{1-2} \cline{4-4}
+    DBMH  & Metz ROC Software \citep{metzsftwr} &    ROC   & Wilcoxon and parametric fits derived AUCs, and others \\ \cline{1-2} \cline{4-4}
+    Mechanistic MRMC & iMRMC \citep{imrmcsftwr} &       & Wilcoxon \\ \hline
+    DBMH  & JAFROC \citep{jafrocsftwr} & ROC, FROC, ROI & Trapezoidal areas under ROC, AFROC, AFROC1, weighted versions and trapezoidal area under ROC', and other FOMs \\ \hline
+    Ordinal regression\citep{ToleGatsOrdiRegr1996,ToledanoThreeMeth2003} &  &  &  \\ \cline{1-1}
+    Wald test on U- statistics\citep{SongAnaOfCorr1997} &       &       &  \\ \cline{1-1}
+    Hierarchical ordinal regression\citep{IshGatAGener2000,ObuBeiMultiMulti2004} &   NA    &   ROC    &  Wilcoxon and others  \\ \cline{1-1}
+    Multiple bootstraps\citep{BeiWagComp2000} &       &       &  \\
+    \bottomrule
+    \end{tabular}%
+    \caption{Software availability of MRMC observer performance methods.}
+  \label{tab:softava}%
+\end{table}%
+
+If a non-significant result is obtained (i.e., $p>\alpha$
+) in a \emph{pilot} study then the investigator may wish to plan
+a \emph{pivotal} study that is sufficiently powered to detect
+a clinically relevant difference in FOMs between the two modalities of interest.
+The pilot study is used to get estimates of variability components in 
+the analysis model, and the approximate expected effect 
+size. Sample-size estimation methods for ROC studies are available on all
+referenced websites. A preliminary sample-size method for free-response
+studies is available on the JAFROC website. We are unaware of any
+sample size estimation method for ROI studies.
+
+\section{Statistical models and methods}
+
+The FOM is a critical determinant of statistical power \citep{ChakraVali2008}
+and clinical relevance \citep{ChakraMeasu2012} of the measurement. Even for the relatively
+simple ROC paradigm, several FOMs have been proposed, e.g., partial
+area measures \citep{JiangMetzARece1996,YousWagnThePart2005}, the Youden index \citep{YoudenIndFor1950} and others \citep{PepeeTheStat2003}. 
+In the following sections we define the implemented ROC data FOM, two FOMs 
+commonly used in analyzing free-response data (several other implemented free-response FOMs are defined in Appendix~\ref{subsec:otherfroc}), 
+followed by the ROI FOM. Two implemented significance-testing methods are described followed by sample-size estimation for ROC studies.
+No derivations are given: we simply refer the interested reader to the literature.
+
+\subsection{Notation and FOM for ROC data}
+
+Images are indexed by ${k_{t}}t$, where $t$ is the truth state (1
+for disease-free cases and 2 for diseased cases) and ${k_{t}}$ indexes
+the cases for truth state $t$, specifically, $k_{1}=1,2\ldots,K_{1}$
+and $k_{2}=1,2\ldots,K_{2}$ where $K_{1}$ is the number of disease-free
+cases and $K_{2}$ is the number of diseased cases. Let ${r_{ij{k_{t}}t}}$
+denote the rating given to case ${k_{t}}t$ by reader $j$
+using modality $i$, where $i=1,2\ldots,I$ and $j=1,2\ldots,J$; 
+$I$ is the number of modalities and $J$ is the
+number of readers. The trapezoidal area under the ROC curve,
+$\theta$, estimated for reader $j$ in modality $i$
+by the Wilcoxon statistic \citep{WilcoxonIndiComp1945,MannWhitOnATest1947}:
+
+\begin{equation}
+\widehat{\theta}_{ij}=\frac{1}{{{K_{1}}{K_{2}}}}\sum\limits _{{k_{1}}}^{{K_{1}}}{\sum\limits _{{k_{2}}}^{{K_{2}}}{\psi\left({{r_{ij{k_{1}}1}},{r_{ij{k_{2}}2}}}\right)}}\label{eq:1}
+\end{equation}
+
+
+The kernel function $\psi$ is defined by:
+
+\begin{equation}
+\left.\begin{array}{lcc}
+\psi\left({{r_{ij{k_{1}}1}},{r_{ij{k_{2}}2}}}\right)=1 &  & {r_{ij{k_{1}}1}}<{r_{ij{k_{2}}2}}\\
+\psi\left({{r_{ij{k_{1}}1}},{r_{ij{k_{2}}2}}}\right)=0.5 &  & {r_{ij{k_{1}}1}}={r_{ij{k_{2}}2}}\\
+\psi\left({{r_{ij{k_{1}}1}},{r_{ij{k_{2}}2}}}\right)=0 &  & {r_{ij{k_{1}}1}}>{r_{ij{k_{2}}2}}
+\end{array}\right\} \label{eq:2}
+\end{equation}
+
+
+This FOM is identical to the area under
+the empirical (trapezoidal) ROC curve \citep{BamDonTheArea1975}. It has the physical
+interpretation as the probability that a randomly picked diseased
+image will be rated higher than a randomly picked non-diseased image \citep{HanMcNTheMean1982}.
+
+
+\subsection{Notation and FOMs for free-response data}
+
+Since free-response data allows for varying number of lesions and
+mark/rating pairs per case, the notation is necessarily more complex.
+The \emph{case-truth} index ${t}$ refers to the case (or patient)
+as a whole (non-diseased, $t=1$, or diseased, $t=2$), not to specific
+locations in the case. Let ${N_{{k_{2}}2}}$ denote the number of lesions
+in diseased case ${k_{2}}2$, where ${N_{{k_{2}2}}}\ge1$. The total
+number of lesions in the data set is ${N_{2}}$:
+
+\begin{equation}
+{N_{2}}=\sum\limits _{{k_{2}}=1}^{{K_{2}}}{N_{{k_{2}}2}}\label{eq:3}
+\end{equation}
+
+The notation is drived from the Chakraborty \emph{search-model} for
+the free-response paradigm \citep{ChakraROC2006,ChakraASear2006} that involves two phases, a
+\emph{search phase} during which suspicious regions (\emph{decision
+sites}) are identified (based on eye-tracking measurements on radiologists this phase
+is quite rapid \citep{KunNodHolComp2007}, typically 100 ms for experts) and a \emph{decision
+phase} during which each decision-site is examined (typically 1 sec
+per site) and a decision is made on whether to mark it.
+Decision sites can be either \emph{noise sites} (not corresponding
+to real lesions) or \emph{signal sites} (corresponding to real lesions).
+Marked noise sites are non-lesion localizations while marked signal
+sites are lesion localizations. Marks are labeled by a \emph{location
+index} ${l_{s}}$ (${l_{s}=1,2,\ldots}$) \emph{and} a \emph{site-truth}
+index ${s}$ which determines the \emph{type} of the site, i.e.,
+$s=1$ for a non-lesion localization and $s=2$ for a lesion localization.
+The rating for modality $i$, reader $j$, case ${k_{t}}t$
+and site ${l_{s}}s$ is denoted ${r_{ij{k_{t}}t{l_{s}}s}}$.
+
+Several methods have been proposed to infer ROC-like data (i.e., single rating per image) from free-response
+data. The highest rating inferred ROC (IR) FOM $\theta_{ij}^{IR}$
+is estimated by (this is identical to the A0 FOM defined
+by \cite{SongBandOnComp2008}):
+
+\begin{equation}
+\widehat{\theta}_{ij}^{IR}=\frac{1}{{K_{2}}{{K_{1}}}}\sum\limits _{{k_{2}}=1}^{{K_{2}}}{{\sum\limits _{{k_{1}}=1}^{{K_{1}}}{\psi\left({max({r_{ij{k_{1}}1*1}}),max({r_{ij{k_{2}}2**}})}\right)}}}\label{eq:4}
+\end{equation}
+
+
+The $max$ function is the maximum over the indices indicated by the
+asterisks. For the second max function the maximum is over all marks 
+(NLs and LLs) on the diseased case. If all lesions are
+marked and no noise sites are marked, signifying perfect performance,
+the $\psi$ function is unity, and $\widehat{\theta}_{ij}^{IR}$ is unity. If
+no lesions are marked and the distribution of the numbers and ratings
+of NL marks is the same for non-diseased and diseased images, signifying
+the observer is unable to discriminate between them, the $\psi$ function
+comparisons yield 0.5, on the average, implying $\widehat{\theta}_{ij}^{IR}=0.5$,
+which is the worst possible ROC performance. The Song et al \citep{SongBandOnComp2008} A1 figure of
+merit takes the average rating of all marked regions on an image to
+infer an ROC-like rating for the image. The Song A2 
+FOM involves a stochastic dominance idea described in \citep{SongBandOnComp2008}.
+
+Let ${W_{{k_{2}}{l_{2}}}}$ denote the weight (clinical importance) of lesion ${l_{2}}2$
+in abnormal case ${k_{2}}2$ such the weights on any given diseased
+case add up to unity:
+
+\begin{equation}
+\sum\limits _{{l_{2}}=1}^{{N_{{k_{2}}2}}}{W_{{k_{2}}{l_{2}}}}=1\label{eq:5}
+\end{equation}
+
+
+The weighted (according to clinical importance) JAFROC FOM $\theta_{ij}^{wJAFROC}$ is estimated
+by:
+
+\begin{equation}
+\widehat{\theta}_{ij}^{wJAFROC}=\frac{1}{{K_{2}}{{K_{1}}}}\sum\limits _{{k_{2}}=1}^{{K_{2}}}{{\sum\limits _{{k_{1}}=1}^{{K_{1}}}{\sum\limits _{{l_{2}}=1}^{{N_{{k_{2}}2}}}{{W_{{k_{2}}{l_{2}}}}\psi\left({max({r_{ij{k_{1}}1*1}}),{r_{ij{k_{2}}2{l_{2}}2}}}\right)}}}}\label{eq:wjafrocfom}
+\end{equation}
+
+
+If all lesions are marked and no non-diseased image is marked the
+$\psi$ function is unity and $\widehat{\theta}_{ij}^{wJAFROC}$ is unity 
+(the best possible performance). If no lesions are marked and every
+non-diseased image has at least one mark the $\psi$ function is zero
+and $\widehat{\theta}_{ij}^{wJAFROC}$ is zero (the worst possible performance).
+This figure or merit, like the one to be described next, ranges between
+0 and unity, unlike the ROC area FOM that ranges between 0.5
+and 1. The above FOM does not count NLs on diseased cases.
+The extension to include the highest rated NL on diseased cases, called
+the weighted JAFROC1 FOM, $\widehat{\theta}_{ij}^{wJAFROC1}$, is:
+
+
+\begin{align}
+\widehat{\theta}_{ij}^{wJAFROC1}=\frac{1}{{K_{2}}\left({{{K_{1}}+{K_{2}}}}\right)}\sum\limits _{{k_{2}}=1}^{{K_{2}}}\left[\sum\limits _{{k_{1}}=1}^{{K_{1}}}\sum\limits _{{l_{2}}=1}^{{N_{{k_{2}}2}}}{{W_{{k_{2}}{l_{2}}}}\psi\left({max({r_{ij{k_{1}}1*1}}),{r_{ij{k_{2}}2{l_{2}}2}}}\right)} \right. \nonumber \\
++ \left. \sum\limits _{{k_{2}'}=1}^{{K_{2}}}{\sum\limits _{{l_{2}}=1}^{{N_{{k_{2}}2}}}{{W_{{k_{2}}{l_{2}}}}\psi\left({max({r_{ij{k_{2}'}2*1}}),{r_{ij{k_{2}}2{l_{2}}2}}}\right)}}\right]
+\label{eq:wjafroc1fom}
+\end{align}
+
+
+
+The first term in the numerator compares LL ratings to the maximum
+NL ratings on non-diseased images, similar to Eqn.~\ref{eq:wjafrocfom}.
+The second term compares LL ratings to the maximum NL ratings on diseased
+images. Since the maximum of NL ratings in ${k_{2}'}2$ is being compared with 
+each LL rating in ${k_{2}}2$, we should use the lesion weights corresponding to 
+${k_{2}}2$ and the ${l_{2}}$ index ranges from 1 to $N_{{k_{2}}2}$. 
+The above two FOMs have covered the needs of most
+users of JAFROC. Other implemented free-response FOMs,
+sometimes needed for specific clinical reasons, are described in 
+Appendix~\ref{subsec:otherfroc}.
+
+\subsection{Notation and FOM for ROI data}
+
+In this paradigm each image is divided into ${Q_{{k_{t}}t}}$ regions of
+interest (ROIs). Obuchowski's analytic significance testing procedure \citep{ObuchoNonparAna1997} 
+can handle varying number of ROIs per image, but is currently unimplemented in \pkg{RJafroc}, which 
+instead uses resampling methods for significance testing. 
+Let ${r_{ij{k_{2}}2{l_{2}}2}}$ denote the
+rating in modality $i$, reader $j$, for the lesion-present
+ROI indexed by  ${l_{2}}2$ in diseased case ${k_{2}}2$ and let ${q_{{k_{2}}22}}$ denote
+the total number of lesion-containing ROIs in the
+case. Similarly, let ${r_{ij{k_{t}}t{l_{1}}1}}$ denote the rating
+in modality ${i}$, reader ${j}$, for the lesion-absent ROI indexed
+by ${l_{1}}1$ in case ${k_{t}}t$ (which could be non-diseased or diseased)
+and let ${q_{{k_{t}}t1}}$ be the total number of non-lesion containing
+ROIs in the case. The trapezoidal area under the ROI-level ROC curve
+is estimated by \cite{ObuLieDataAna2000}
+
+\begin{equation}
+\widehat{\theta}_{ij}^{ROI}=\frac{{\sum\limits _{{k_{1}}=1}^{{K_{1}}}{\sum\limits _{{k_{2}}=1}^{{K_{2}}}{\sum\limits _{t=1}^{2}{\sum\limits _{{l_{1}}=1}^{{q_{{k_{t}}t1}}}{\sum\limits _{{l_{2}}=1}^{{q_{{k_{2}}22}}}{\psi\left({{r_{ij{k_{t}}t{l_{1}}1}},{r_{ij{k_{2}}2{l_{2}}2}}}\right)}}}}}}}{{\sum\limits _{{k_{1}}=1}^{{K_{1}}}{\sum\limits _{{k_{2}}=1}^{{K_{2}}}{\sum\limits _{t=1}^{2}{\sum\limits _{{l_{1}}=1}^{{q_{{k_{t}}t1}}}{\sum\limits _{{l_{2}}=1}^{{q_{{k_{2}}22}}}{\left(1\right)}}}}}}}\label{eq:7}
+\end{equation}
+
+
+For $t=1$ the comparisons are between ratings of lesion-containing
+ROIs and ratings of ROIs on non-diseased cases and for t = 2 comparisons
+are between ratings of lesion-containing ROIs and ratings of lesion-absent
+ROIs on diseased cases. Unlike the ROC FOM and the weighted
+JAFROC FOM, the ROI FOM, like the weighted
+JAFROC1 FOM, can be defined over a dataset with no non-diseased
+cases. Table~\ref{tab:sumfom} summarizes the FOMs described so far.
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{>{\centering\arraybackslash}m{0.1\linewidth}>{\centering\arraybackslash}m{0.3\linewidth}>{\centering\arraybackslash}m{0.1\linewidth}>{\centering\arraybackslash}m{0.3\linewidth}}
+    \toprule
+    Paradigm & Description of FOM & \multicolumn{1}{c}{Symbol} & Comments \\
+    \midrule
+    ROC   & Trapezoidal area under ROC &  $\widehat{\theta}_{ij}$     & Equivalent to Wilcoxon statistic \\ \hline
+          & Highest rating inferred ROC &   $\widehat{\theta}_{ij}^{IR}$    &  \\ \cline{2-4}
+          & Average rating inferred ROC &   A1 &  \\ \cline{2-4}
+    FROC  & Stochastic dominance inferred ROC & A2 &  \\ \cline{2-4}
+          & Weighted JAFROC &   $\widehat{\theta}_{ij}^{wJAFROC}$    & Recommended FOM for FROC data \\ \cline{2-4}
+          & Weighted JAFROC1 &   $\widehat{\theta}_{ij}^{wJAFROC1}$    & To be used only in absence of non-diseased cases \\ \hline
+    ROI   & Trapezoidal area under ROI-level ROC' &   $\widehat{\theta}_{ij}^{ROI}$    &  \\
+    \bottomrule
+    \end{tabular}%
+    \caption{Summary of the FOMs for the different observer
+performance measurement data collection methods. [IR = inferred
+ROC using the highest rating; A1, A2 are inferred ROC FOMs]}
+  \label{tab:sumfom}%
+\end{table}%
+
+\subsection{DBMH significance testing method}
+
+The DBM method \citep{DorBerROC1992} models the jackknife derived pseudovalues \citep{EfrTibAnIntro1993}
+of $\widehat{\theta}_{ij}$, denoted $Y'_{ijk}$ for modality {$i$},
+reader {$j$} and case {$k$} (${k=1,2,\ldots K}$; where
+$K={K_{1}}+{K_{2}}$ is the total number of cases). The pseudovalues
+are defined by:
+
+\begin{equation}
+Y'_{ijk}=K\widehat{\theta}_{ij}-\left({K-1}\right)\widehat{\theta}_{ij(k)}\label{eq:8}
+\end{equation}
+
+
+Here $\widehat{\theta}_{ij(k)}$ is the estimate of ${\theta_{ij}}$ for
+modality {$i$}, reader {$j$} and case $k$ removed (jackknifed)
+from the analysis. \cite{HillBerRecDev2008} have defined a centering transformation
+
+\begin{equation}
+Y_{ijk}=Y'_{ijk}+\left({\widehat{\theta}_{ij}-Y'_{ij\bullet}}\right)\label{eq:9}
+\end{equation}
+
+
+The effect of this transformation is that the average of the centered
+pseudovalues over the case index is identical to the estimate of the
+FOM:
+
+\begin{equation}
+{Y_{ij\bullet}}=Y'_{ij\bullet}+\left({\widehat{\theta}_{ij}-Y'_{ij\bullet}}\right)=\widehat{\theta}_{ij}\label{eq:10}
+\end{equation}
+
+
+This has the practical advantage that all confidence intervals are
+correctly centered. While this transformation is unnecessary if one
+uses the Wilcoxon as the figure-of-merit, for generality with other
+possible FOMs, \emph{it is understood that all calculations
+from now on will use centered pseudovalues}. The DBM pseudovalue model \citep{DorBerROC1992} is:
+
+\begin{equation}
+\begin{array}{l}
+{Y_{ijk}}=\mu+{\tau_{i}}+{R_{j}}+{C_{k}}+{\left({\tau R}\right)_{ij}}+{\left({\tau C}\right)_{ik}}+{\left({RC}\right)_{jk}}+{\varepsilon_{ijk}}\\
+\sum\limits _{i=1}^{I}{{\tau_{i}}=0}
+\end{array}\label{eq:psvaluecomp}
+\end{equation}
+
+The right hand side consists of 2 fixed effects, $\mu,{\tau_{i}}$,
+and 6 random effects modeled as mutually independent samples from
+zero-mean normal distributions with variances (in the same order of
+appearance in the above equation) $\sigma_{R}^{2}$, $\sigma_{C}^{2}$,
+$\sigma_{\tau R}^{2}$, $\sigma_{\tau C}^{2}$, $\sigma_{RC}^{2}$
+and $\sigma_{\varepsilon}^{2}$. Using the dot symbol to denote an
+average over the corresponding index, the first term can be $\mu$
+estimated by averaging the observed left hand side over all three
+indices:
+
+\begin{equation}
+\mu={Y_{\bullet\bullet\bullet}}\label{eq:12}
+\end{equation}
+
+
+The modality effect can be estimated by:
+
+\begin{equation}
+{\tau_{i}}={Y_{i\bullet\bullet}}-\mu\label{eq:13}
+\end{equation}
+
+
+The reader and case averaged difference between two different modalities
+{$i$} and {$i'$} (often termed the \emph{observed effect
+size}) is given by
+
+\begin{equation}
+{\tau_{i}}-{\tau_{i'}}={Y_{i\bullet\bullet}}-{Y_{i'\bullet\bullet}}=\widehat{\theta}_{i\bullet}-\widehat{\theta}_{i'\bullet}\label{eq:14}
+\end{equation}
+
+
+Estimating the strengths of the random terms involves analysis of
+variance (ANOVA) methods specially adapted to this problem by Dorfman,
+Berbaum, Metz, Hillis and others. The starting point is calculation of 
+the mean squares. In the following definitions the Y subscript emphasizes that the relevant
+mean-square quantities are calculated using pseudovalues, not figure-of-merit
+values.
+
+\begin{equation}
+\begin{array}{l}
+MS_{Y}\left(T\right)=\frac{{JK\sum\limits _{i=1}^{I}{{\left({{Y_{i\bullet\bullet}}-{Y_{\bullet\bullet\bullet}}}\right)}^{2}}}}{{I-1}}\\
+MS_{Y}\left(R\right)=\frac{{IK\sum\limits _{j=1}^{J}{{\left({{Y_{\bullet j\bullet}}-{Y_{\bullet\bullet\bullet}}}\right)}^{2}}}}{{J-1}}\\
+MS_{Y}\left({TR}\right)=\frac{{K\sum\limits _{i=1}^{I}{\sum\limits _{j=1}^{J}{{\left({{Y_{ij\bullet}}-{Y_{ij\bullet}}-{Y_{\bullet j\bullet}}+{Y_{\bullet\bullet\bullet}}}\right)}^{2}}}}}{{\left({I-1}\right)\left({J-1}\right)}}\\
+MS_{Y}\left({TC}\right)=\frac{{J\sum\limits _{i=1}^{I}{\sum\limits _{k=1}^{K}{{\left({{Y_{i\bullet k}}-{Y_{i\bullet\bullet}}-{Y_{\bullet\bullet k}}+{Y_{\bullet\bullet\bullet}}}\right)}^{2}}}}}{{\left({I-1}\right)\left({K-1}\right)}}\\
+MS_{Y}\left(\varepsilon\right)=\frac{{\sum\limits _{i=1}^{I}{\sum\limits _{j=1}^{J}{\sum\limits _{k=1}^{K}{{\left({{Y_{ijk}}-{Y_{ij\bullet}}-{Y_{i\bullet k}}-{Y_{\bullet jk}}+{Y_{i\bullet\bullet}}+{Y_{\bullet j\bullet}}+{Y_{\bullet\bullet k}}-{Y_{\bullet\bullet\bullet}}}\right)}^{2}}}}}}{{\left({I-1}\right)\left({J-1}\right)\left({K-1}\right)}}
+\end{array}\label{eq:15}
+\end{equation}
+
+
+Hillis proposes the following $f$~statistic for testing the null hypothesis
+of no modality effect \citep{HillisAComp2007}:
+
+\begin{equation}
+{F_{DBMH}}=\frac{MS_{Y}\left(T\right)}{{MS_{Y}\left({TR}\right)+H\left({MS_{Y}\left({TC}\right)-MS_{Y}\left(\varepsilon\right)}\right)}}\label{eq:16}
+\end{equation}
+
+
+Here $H\left(x\right)$ is the unit step function, defined as unity
+for positive $x$ and zero otherwise. Hillis has shown that ${F_{DBMH}}$
+is distributed as an $f$~statistic with numerator degrees of freedom
+$ndf=I-1$ (i.e., one less than the number of treatments) and $ddf_{H}$
+denominator degrees of freedom, i.e.,
+
+\begin{equation}
+{F_{DBMH}}\sim{F_{ndf,ddf_{H}}}\label{eq:17}
+\end{equation}
+
+The denominator degrees of freedom $dd{f_{H}}$ is defined by (this
+is different from the original definitions by DBM):
+
+\begin{equation}
+ddf_{H}=\frac{{{\left[{MS_{Y}\left({TR}\right)+H\left[{MS_{Y}\left({TC}\right)-MS_{Y}\left(\varepsilon\right)}\right]}\right]}^{2}}}{{\frac{{MS_{Y}\left({TR}\right)}^{2}}{{\left({I-1}\right)\left({J-1}\right)}}}}\label{eq:ddfhdbm}
+\end{equation}
+
+
+The critical value of the $f$~statistic for rejection of the null hypothesis
+is given by ${F_{1-\alpha,ndf,dd{f_{H}}}}$. The $p$~value of the test
+is given by:
+
+\begin{equation}
+p=P\left({F>{F_{DBMH}}|F\sim{F_{ndf,dd{f_{H}}}}}\right)\label{eq:19}
+\end{equation}
+
+
+The $\left({1-\alpha}\right)100$ percent confidence interval for
+$\left({{\theta_{i}}-{\theta_{i'}}}\right)$is given by
+
+\begin{equation}
+C{I_{1-\alpha}}=\left({\widehat{\theta}_{i\bullet}-\widehat{\theta}_{i'\bullet}}\right)\pm{t_{\alpha/2;dd{f_{H}}}}\sqrt{\frac{2}{{JK}}\left({MS_{Y}\left({TR}\right)+\max\left({MS_{Y}\left({TC}\right)-MS_{Y}\left(\varepsilon\right),0}\right)}\right)}\label{eq:20}
+\end{equation}
+
+
+The analysis described so far treats both readers and cases as random
+factors, so it is termed \emph{random-reader random-case }(RRRC).
+Special cases of the analysis, which regards either readers or cases
+as fixed factors, is possible, and the results are given in Appendix~\ref{subsec:spedbm}.
+These are sometimes necessary if the number of readers or the number
+of cases is not large enough to support treating them as random factors
+(for example, one could have a single reader interpret a set of cases
+in two modalities and it would not make much sense to attempt to generalize 
+this study to the population of readers).
+
+
+\subsection{ORH significance testing method}
+
+The statistical model underlying the OR method is \citep{ObuRocHypoTest1995}:
+
+\begin{equation}
+\begin{array}{l}
+\widehat{\theta}_{ij\{c\}}={\theta_{0}}+\Delta{\theta_{i}}+{R_{j}}+{\left({\tau R}\right)_{ij}}+{\varepsilon_{ij\{c\}}}\\
+\sum\limits _{i=1}^{I}{\Delta{\theta_{i}}}=0
+\end{array}\label{eq:orcomp}
+\end{equation}
+
+
+The left hand side is the estimated figure-of-merit $\widehat{\theta}_{ij\{c\}}$
+for modality {$i$} and \emph{case-set} index $\left\{ c\right\} $,
+where {$c=1,2,\ldots,C$} denote different case sets (i.e., different
+\emph{collections} of cases, not individual cases, emphasized
+by the curly bracket notation) sampled from the patient
+population). In practice the dataset is limited to $c=1$, but resampling
+and other methods, are available to estimate the case-sample variability
+from a single case set realization. The first two terms on the right
+hand side of Eqn.~\ref{eq:orcomp} have their usual meanings. The
+remaining terms are mutually independent random samples: ${R_{j}}$
+denotes a random contribution to the figure-of-merit of reader {$j$},
+modeled as a sample from a zero-mean normal distribution with variance
+$\sigma_{R}^{2}$; ${\left({\tau R}\right)_{ij}}$ denotes a treatment-dependent
+random contribution of reader $j$ in modality {$i$},
+modeled as a sample from a zero-mean normal distribution with variance
+$\sigma_{\tau R}^{2}$. [We are abusing the notation but it is implicit
+that the variances in the OR model refer to the FOM, while those in
+the DBM model apply to pseudovalues.] The error term is modeled
+by a zero mean vector multivariate normal distribution with covariance
+matrix $\Sigma$ described by 4 parameters, $Var,Cov_{1},Cov_{2},Cov_{3}$,
+defined as follows:
+
+\begin{equation}
+Cov\left({{\varepsilon_{ij\{c\}}},{\varepsilon_{i'j'\{c\}}}}\right)=\left\{ {\begin{array}{c}
+{\begin{array}{cc}
+{Var} & {i=i',j=j'}\end{array}}\\
+{\begin{array}{cc}
+{Cov_{1}} & {i\ne i',j=j'}\end{array}}\\
+{\begin{array}{cc}
+{Cov_{2}} & {i=i',j\ne j'}\end{array}}\\
+{\begin{array}{cc}
+{Cov_{3}} & {i\ne i',j\ne j'}\end{array}}
+\end{array}}\right.\label{eq:22}
+\end{equation}
+
+
+OR have suggested that the 4 elements of the covariance matrix should
+be ordered as follows:
+
+\begin{equation}
+Var\ge Cov_{1}\ge Cov_{2}\ge Cov_{3}\label{eq:23}
+\end{equation}
+
+
+Resampling methods are used to estimate the parameters of the covariance
+matrix. Using the bootstrap method \citep{EfrTibAnIntro1993}, where ${\left\{ b\right\} }$
+is the {$b^{th}$} bootstrap replicate, {$b=1,2,\ldots,B$},
+
+\begin{equation}
+\widehat{Cov}\left({{\varepsilon_{ij\{c\}}},{\varepsilon_{i'j'\{c\}}}}\right)={\left\langle {\frac{1}{{B-1}}\sum\limits _{b=1}^{B}{\left({{\theta_{ij\{b\}}}-{\theta_{ij\{\bullet\}}}}\right)\left({{\theta_{i'j'\{b\}}}-{\theta_{i'j'\{\bullet\}}}}\right)}}\right\rangle _{ij}}\label{eq:24}
+\end{equation}
+
+
+As with the case-set index ${\left\{ c\right\} }$, the bootstrap
+index ${\left\{ b\right\} }$ denotes a set of cases. The averages,
+indicated by the bracket symbols, over modalities and readers are
+necessary since the co-variances in the OR model are assumed to be
+independent of modality and reader. The jackknife estimate is:
+
+\begin{equation}
+\widehat{Cov}\left({{\varepsilon_{ij\{c\}}},{\varepsilon_{i'j'\{c\}}}}\right)={\left\langle {\frac{{K-1}}{K}\sum\limits _{k=1}^{K}{\left({{\theta_{ij(k)}}-{\theta_{ij(\bullet)}}}\right)\left({{\theta_{i'j'(k)}}-{\theta_{i'j'(\bullet)}}}\right)}}\right\rangle _{ij}}\label{eq:25}
+\end{equation}
+
+
+\cite{DeLongComp1988} have described an analytical covariance estimation
+method that is applicable as long as one restricts to the ROC paradigm
+and the Wilcoxon FOM (the bootstrap and the jackknife are applicable to any FOM).
+
+Because of the correlated structure of the error term a customized
+ANOVA is needed. The null hypothesis is that the true figure-of-merit
+of all modalities are identical, i.e.,
+
+\begin{equation}
+NH:\Delta{\theta_{i}}=0\left({i=1,2,...,I}\right)\label{eq:26}
+\end{equation}
+
+
+A modified $f$~statistic is needed, denoted $F_{ORH}^{*}$ and defined
+by (this is different from that originally suggested by OR):
+
+\begin{equation}
+F_{ORH}^{*}=\frac{{MS\left(T\right)}}{{MS\left({TR}\right)+H\left({J\left({\widehat{Cov_{2}}-\widehat{Cov_{3}}}\right)}\right)}}\label{eq:forh}
+\end{equation}
+
+
+Eqn.~\ref{eq:forh} incorporates Hillis' modification, which ensures
+that the constraint $Cov_{2}\ge Cov_{3}$ is always obeyed. The mean
+square ($MS$) terms are defined by (note the lack of the Y subscript,
+as these are calculated directly using FOM values):
+
+\begin{equation}
+\begin{array}{l}
+MS\left(T\right)=\frac{J}{{I-1}}\sum\limits _{i=1}^{I}{{\left({\widehat{\theta}_{i\bullet}-\widehat{\theta}_{\bullet\bullet}}\right)}^{2}}\\
+MS\left({TR}\right)=\frac{1}{{\left({I-1}\right)\left({J-1}\right)}}\sum\limits _{i=1}^{I}{\sum\limits _{j=1}^{J}{{\left({\widehat{\theta}_{ij}-\widehat{\theta}_{i\bullet}-\widehat{\theta}_{\bullet j}+\widehat{\theta}_{\bullet\bullet}}\right)}^{2}}}
+\end{array}\label{eq:28}
+\end{equation}
+
+
+The observed statistic $F_{ORH}^{*}$ is distributed
+as an $f$~statistic with {$ndf=I-1$} and $ddf_{H}^{OR}$ degrees of
+freedom:
+
+\begin{equation}
+F_{ORH}^{*}\sim{F_{ndf,ddf_{H}^{OR}}}\label{eq:29}
+\end{equation}
+
+
+where
+
+\begin{equation}
+ddf_{H}^{OR}={\frac{{\left[{MS\left({TR}\right)+\left({J\left({\widehat{Cov_{2}}-\widehat{Cov_{3}}}\right)}\right)}\right]}}{{{\frac{{\left[{MS\left({TR}\right)}\right]}}{{\left({I-1}\right)\left({J-1}\right)}}}^{2}}}^{2}}\label{eq:ddfhor}
+\end{equation}
+
+
+As long as the jackknife is used to estimate the variance-components 
+and co-variances in the two models, respectively, and  the Wilcoxon 
+or Wilcoxon-like statistic, the definitions of $ddf_{H}$ and $ddf_{H}^{OR}$ (Eqn. 
+\ref{eq:ddfhdbm} and Eqn.~\ref{eq:ddfhor}) are the same; if the DeLong method
+or the bootstrap are used to estimate the co-variances, the two will yield 
+slightly different results. The critical value of the $f$~statistic for 
+rejection of the null hypothesis is given by ${F_{1-\alpha,ndf,ddf_{H}^{OR}}}$. 
+The $p$~value of the test is given by:
+
+\begin{equation}
+p=P\left({F>F_{ORH}^{*}|F\sim{F_{ndf,ddf_{H}^{OR}}}}\right)\label{eq:31}
+\end{equation}
+
+
+The $\left({1-\alpha}\right)100$ percent confidence interval for $\left({{\widehat\theta_{i}}-{\widehat\theta_{i'}}}\right)$
+is given by
+
+\begin{equation}
+C{I_{1-\alpha}}=\left({\widehat{{\theta_{i\bullet}}}-\widehat{{\theta_{i'\bullet}}}}\right)\pm{t_{\alpha/2;ddf_{H}^{OR}}}\sqrt{\frac{2}{J}\left({MS\left({TR}\right)+J\max\left({Cov_{2}-Cov_{3},0}\right)}\right)}\label{eq:32}
+\end{equation}
+
+The analysis described so far treats both readers and cases as random factors (RRRC). Special cases of the analysis, which regards either readers or cases as fixed factors, are given in Appendix~\ref{subsec:orspcases}. 
+
+\subsection{Sample size estimation for ROC studies}
+
+We will illustrate the procedure for the ORH method. Two modalities are assumed.
+The \emph{observed effect size} (absolute value of the difference
+in FOMs between the two modalities) is $2\left|{\widehat{{\tau_{1}}}}\right|$.
+Under the alternative hypothesis $AH:{\tau_{i}}\ne0$ the test statistic
+is distributed as a \emph{non-central} F-distribution with {$ndf=1$}
+and to-be-determined {$ddf$} and non-centrality parameter $\Delta$.
+The following sample size procedure \citep{HillObuPower2011} assumes random-readers and random
+cases; different formulae apply when either readers or cases is treated
+as a fixed effect, see below.
+\begin{enumerate}
+\item {Specify the effect size $d$: typically, when dealing with
+area under the ROC curve as the FOM, one might choose
+observed effect size in the pilot study . } 
+\item {Estimate the OR modality-reader interaction variance component: this is given by (see Table 1 in \cite{HillisAComp2007}): 
+\[
+\hat{\sigma}_{\tau R}^{2}=MS\left({TR}\right)-\widehat{Var}+\widehat{Cov_{1}}+H\left({\widehat{Cov_{2}}-\widehat{Cov_{3}}}\right)
+\]
+If this yields a negative variance, Hillis suggests setting it to
+zero.}
+\item {Estimate the non-centrality parameter and the ${ddf}$
+of the F-distribution. Let ${K^{*}}$ denote the number of cases in
+the pilot study, and let $J,K$ be the
+numbers of readers, cases in the pivotal study. The non-centrality
+parameter $\Delta$ and the $ddf$ are estimated
+by: 
+\[
+\widehat{\Delta}=\frac{{J\frac{{d^{2}}}{2}}}{{\hat{\sigma}_{\tau R}^{2}+\frac{{K^{*}}}{K}\left({\widehat{Var}-\widehat{Cov_{1}}+\left({J-1}\right)H\left({\widehat{Cov_{2}}-\widehat{Cov_{3}}}\right)}\right)}}
+\]
+\[
+\widehat{ddf}=\left({J-1}\right)\frac{{{\left[{\hat{\sigma}_{\tau R}^{2}+\frac{{K^{*}}}{K}\left({\widehat{Var}-\widehat{Cov_{1}}+\left({J-1}\right)H\left({\widehat{Cov_{2}}-\widehat{Cov_{3}}}\right)}\right)}\right]}^{2}}}{{{\left[{\widehat{\sigma_{\tau R}^{2}}+\frac{{K^{*}}}{K}\left({\widehat{Var}-\widehat{Cov_{1}}+\left({J-1}\right)H\left({\widehat{Cov_{2}}-\widehat{Cov_{3}}}\right)}\right)}\right]}^{2}}}
+\]
+ }
+\item {The statistical power $1-\beta$ at significance level $\alpha$
+can be calculated using: 
+\[
+1-\beta=P\left({{F>{F_{1-\alpha;1,\widehat{ddf}}}}|F\sim{F_{1,\widehat{ddf};\widehat{\Delta}}}}\right)
+\]
+${F_{1,ddf;\Delta}}$ denotes the non-central F-distribution
+with degrees of freedom 1, $ddf$, and non-centrality parameter $\Delta$
+and ${F_{1-\alpha;1,ddf}}$ is the critical value of F such that fraction
+of the $1-\alpha$ central F distribution with degrees of freedom
+1, $ddf$ is below the critical value. }
+\item {If the power is below the desired or target power, typically
+chosen to be 0.8, one tries successively larger value of $K$
+until the target power is reached. }
+\item {The procedure is repeated with different values of $J$ (depending
+on cost and other practicality issues, it might be better to have
+more reader each reading fewer cases to achieve the same target power).} 
+\end{enumerate}
+
+Hillis has also described a procedure, currently unimplemented in
+\pkg{RJafroc}, for correcting the estimate if the numbers of non-diseased
+to diseased case ratio is substantially different between pilot and
+pivotal studies \citep{HillObuPower2011}.
+
+
+\subsubsection{Formulae for fixed reader random case (FRRC) sample size estimation}
+
+The only change needed is to define:
+
+\begin{equation}
+ddf=K-1\label{eq:33}
+\end{equation}
+
+
+
+\subsubsection{Formulae for random reader fixed case (RRFC) sample size estimation}
+
+The only change needed is to define:
+
+\begin{equation}
+ddf=J-1\label{eq:34}
+\end{equation}
+
+\section{Examples}
+
+It is assumed that the package has been installed from the CRAN website
+and loaded using the \code{library()} function. Users familiar with the 
+Windows JAFROC graphical user interface (GUI), who simply wish to analyze 
+their data, can skip to subsection~\ref{subsec:gui}, which describes the GUI.
+
+<<echo=FALSE, results='hide', message=FALSE>>=
+library("RJafroc")
+@
+
+
+\subsection[{Structure of the dataset}]{Structure of the \code{dataset}}
+\label{subsec:datastr}
+The package comes pre-loaded with three datasets: (1) an ROC dataset
+named \code{rocData}, which has been repeatedly used by Berbaum,
+Hillis and colleagues to illustrate advances in ROC methodology \citep{HillisAComp2007}
+(and referred to in their papers as Van Dyke data \citep{VanDykeWhiteCineMRI1993}), (2) an
+FROC dataset named \code{frocData}, contributed by Dr. Zanca \citep{ZanJacoEvaluOfClin2009},
+and a simulated ROI dataset named \code{roiData} (see Appendix~\ref{subsec:roisimu}
+for details regarding the ROI simulator). The dataset structures are shown
+below:
+
+<<>>=
+str(rocData)
+@
+
+<<>>=
+str(frocData)
+@
+
+<<>>=
+str(roiData)
+@
+
+
+The ROC dataset has two modalities, 5 readers, 69 non-diseased
+and 45 diseased cases. The FROC data set has two modalities, 4 readers, 
+100 non-diseased and 100 diseased cases. Since ROC and ROI data
+are special cases of FROC data, the same data structure is
+used to accommodate all of them. The \code{dataType} field can
+be \code{ROC}, \code{FROC} or \code{ROI}. For ROC data, for a given modality
+and reader, the FP ratings are in the first ${K_{1}}$ values of the third dimension 
+of the NL array and the corresponding
+TP ratings are in the ${K_{2}}$ values of the third dimension
+of the LL array. The fourth dimension of the NL and LL arrays, only
+the first value of which is used for ROC ratings, corresponds
+to the location index ${l_{s}}s$, i.e., the multiple marks of a given
+type, NL ($s=1$) or LL ($s=2$), that are possible for FROC data.
+In the above example, the dimensions of the NL array shows that
+there is least one image in the dataset with 7 NL marks, while the
+dimensions of the LL array shows that there is at least one diseased
+image with 3 lesions. The \code{lesionNum} field is an array of
+length ${K_{2}}$ whose elements contain the number of lesions in
+the diseased cases, i.e., ${N_{{k_{2}}2}}$. The \code{lesionID}
+field is an integer label (not necessarily consecutive or even positive) used to distinguish
+between different lesions on the same case. This is necessary when
+weighted FOMs are used, as it is necessary to keep track of which
+lesion is getting which rating in order to assign it the correct weight.
+For example, \code{LL[1,1,1,2]} is the rating assigned to the
+$2^{nd}$ lesion for the first diseased case, first reader in the
+first modality and the corresponding label is \code{lesionID[1, 2]}.
+The \code{lesionWeight} field, corresponding to ${W_{{k_{2}}{l_{2}}}}$,
+has the same dimensions as \code{lesionID}. The string vectors \code{ModalityID}
+and \code{readerID} are of length $I,J$, that are used to identify the modalities and readers, respectively.
+The ROI dataset has two modalities, 5 readers, 50 non-diseased and
+40 diseased images, each with 4 ROIs. On the diseased images, the
+number of actually diseased ROIs varies from 1 to 4. The simulator, coded in \proglang{R},
+is describded in Appendix~\ref{subsec:roisimu} and is available from \url{http://www.devchakraborty.com/RoiData/RoiSimulator.zip}.
+
+
+\subsection[{Creating dataset objects}]{Creating \code{dataset} objects}
+
+By adhering to the structure described above one can manually (or using code) 
+create a \code{dataset} object (this could be useful in running
+simulation studies). For a single dataset it is more convenient to
+enter the data into an Excel sheet (both \code{.xlsx} and \code{.xls}
+files are supported) following the JAFROC data file format detailed
+in the help page for the package \code{RJafroc-package} and summarized
+below. A JAFROC Excel file contains three worksheets: 
+
+\begin{enumerate}
+\item A Truth worksheet, which contains a list of all cases in the dataset
+and the number of lesions, if any, on each case, and the weight of
+each lesion. 
+\item A TP or LL worksheet (use TP for ROC data and LL for all other paradigms),
+which contains the ratings of TPs or LLs. 
+\item A FP or NL worksheet (use FP for ROC data and NL for all other paradigms),
+which contains the ratings of FPs or NLs. 
+\end{enumerate}
+
+For FROC data, except for the Truth worksheet, where each case must
+occur at least once, the number of rows in the other worksheets is
+variable. For ROC data each case appears once in the Truth worksheet
+and it appears once in either the FP or TP worksheet. 
+
+The \code{ReadDataFile()} function reads the data in JAFROC
+format (the default). If \code{format = "MRMC"}, it will read
+\code{.csv}, \code{.txt} or \code{.lrc} files (\url{http://perception.radiology.uiowa.edu/}).
+If \code{{format = "iMRMC"}}
+it will read \code{.imrmc} files (\url{https://code.google.com/p/imrmc/}).
+In each case it returns a \code{dataset} object. The MRMC and iMRMC formats
+apply to ROC data only while the JAFROC format applies to all paradigms. The following 
+code reads differently formattted datasets supplied with the package. The first group of 
+six statements locates the full pathnames of the files in the user's installation, and the 
+next group of six statements reads each file, with appropriate use of the \code{format} option.
+
+<<>>=
+rocXlsx <- system.file("tests", "rocData.xlsx", package = "RJafroc")
+rocLrc <- system.file("tests", "rocData.lrc", package = "RJafroc")
+rocCsv <- system.file("tests", "rocData.csv", package = "RJafroc")
+rocImrmc <- system.file("tests", "rocData.imrmc", package = "RJafroc")
+frocXlsx <- system.file("tests", "frocData.xlsx", package = "RJafroc")
+roiXlsx <- system.file("tests", "roiData.xlsx", package = "RJafroc")
+
+RocDataXlsx<- ReadDataFile(fileName = rocXlsx)
+RocDataLrc<- ReadDataFile(fileName = rocLrc, format = "MRMC")
+RocDataCsv<- ReadDataFile(fileName = rocCsv, format = "MRMC")
+RocDataImrmc<- ReadDataFile(fileName = rocImrmc, format = "iMRMC")
+FrocDataXlsx<- ReadDataFile(fileName = frocXlsx)
+RoiDataXlsx<- ReadDataFile(fileName = roiXlsx)
+
+@
+
+
+\subsection{Analyzing an ROC dataset}
+
+One has two choices, DBMH significance testing, implemented by the
+function \code{DBMHAnalysis()}, or ORH significance testing, implemented
+by the function \code{ORHAnalysis()}. Both of these take a dataset
+object as the first argument, and have options for changing the significance
+level $\alpha$ of the test (the default is 0.05), and which factors
+(readers and/or cases) are to be regard as random (the default is \code{ALL}).
+Both functions use the weighted JAFROC FOM as the default,
+so to analyze ROC and ROI paradigm data one must explicitly specify
+the FOM options as shown below. The code below demonstrates the application of the DBMH significance
+testing procedure to an ROC \code{dataset} object:
+
+<<results='hide'>>=
+retDbmRoc  <- DBMHAnalysis(rocData, fom = "Wilcoxon") 
+print(retDbmRoc)
+
+@
+
+
+The returned object, a list of 22 elements, has the structure
+shown in Table~\ref{tab:dbmret}. The output
+can be understood if one uses the following abbreviations,
+often used in combination: \code{Trt} = treatment, \code{Rdr}
+= reader, \code{RRRC} = random reader random case, \code{FRRC}
+= fixed reader random case, \code{RRFC} = random reader fixed case,
+\code{ci} = $1-\alpha$ confidence interval, \code{fomArray} = 
+$\widehat{\theta}_{ij}$, \code{f} = value of observed
+$f$~statistic, \code{p} = $p$~value for rejecting the null hypothesis,
+\code{DiffTrt} = reader-averaged FOM differences between pairs
+of modalities, \code{ddf} = denominator degrees of freedom for
+F-test (the numerator degrees of freedom is always ${I}-1$), \code{
+AvgRdrEachTrt} = the FOM is averaged over all readers, separately
+for each treatment, \code{varComp} = the DBM pseudovalue variance
+components defined in connection with Eqn.~\ref{eq:psvaluecomp}.
+For the dataset shown, the reader-averaged difference between the
+two modalities is not significant for \code{RRRC} ($p = 0.0517$),
+but is significant if either reader ($p=0.021$) or case ($p=0.042$)
+is regarded as a fixed factor.
+
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{l>{\arraybackslash}m{0.7\linewidth}}
+    \toprule
+    \multicolumn{1}{c}{Variable name} & \multicolumn{1}{c}{Description} \\
+    \midrule
+    \code{fomArray} & The FOM array of each reader and modality. \\
+    \code{anovaY} & The ANOVA table of the pseudovalues. \\
+    \code{anovaYi} & The ANOVA table of the pseudovalues for each modality. \\
+    \code{varComp} & The table of DBM variance components estimates. \\
+    \code{fRRRC}& The $f$~statistic for testing the null hypothesis, for the RRRC condition. \\
+    \code{ddfRRRC} & The denominator degrees of freedom of the $f$~statistic, for the RRRC condition. \\
+    \code{pRRRC}& The $p$~value of the significance test of the NH for the RRRC condition. \\
+    \code{ciDiffTrtRRRC} & The confidence intervals and related tests for the reader-averaged FOM differences between pairs of modalities, for the RRRC condition. \\
+    \code{ciAvgRdrEachTrtRRRC} & The confidence intervals and related tests for reader averaged FOM in each modality, for the RRRC condition. \\
+    \code{fFRRC} & The $f$~statistic for testing the null hypothesis, for the FRRC condition. \\
+    \code{ddfFRRC} & The denominator degrees of freedom of the FRRC $f$~statistic. \\
+    \code{pFRRC} & The $p$~value of the significance test of the NH, for the FRRC condition. \\
+    \code{ciDiffTrtFRRC} & The confidence intervals and related tests for the reader-averaged FOM differences between pairs of modalities, for the FRRC condition. \\
+    \code{ciAvgRdrEachTrtFRRC} & The confidence intervals and related tests for reader averaged FOM in each modality, for the FRRC condition. \\
+    \code{ssAnovaEachRdr} & The sum of squares table of the ANOVA of the pseudovalues for each reader (based on the data only for the specified reader). \\
+    \code{msAnovaEachRdr} & The mean squares table of the ANOVA of the pseudovalues for each reader (based on the data only for the specified reader). \\
+    \code{ciDiffTrtEachRdr} & The confidence intervals and related tests of the FOM differences between pairs of modalities for each reader. \\
+    \code{fRRFC} & The $f$~statistic for testing the null hypothesis, for the RRFC condition. \\
+    \code{ddfRRFC} & The denominator degrees of freedom of the $f$~statistic, for the RRFC condition. \\
+    \code{pRRFC} & The $p$~value of the significance test of the NH, for the RRFC condition. \\
+    \code{ciDiffTrtRRFC} & The confidence intervals and related tests for the FOM differences between pairs of modalities, for the RRFC condition. \\
+    \code{ciAvgRdrEachTrtRRFC} & The confidence intervals and related tests for reader averaged FOM in each modality, for the RRFC condition. \\
+    \bottomrule
+    \end{tabular}%
+    \caption{The structure of the object \code{retDbmRoc} returned
+by \code{DBMHAnalysis}. See text for abbreviations.}
+  \label{tab:dbmret}%
+\end{table}%
+
+To perform ORH significance testing one uses the function
+\code{ORHAnalysis()}, which takes the same arguments as \code{DBMHAnalysis()},
+and additional optional arguments allowing choice of the covariance
+estimation method: \code{CovEstMethod} = \code{Jackknife}, \code{Bootstrap}
+or \code{DeLong} (\code{Jackknife} is the default) and if the bootstrap
+method is selected one can optionally specify the number of bootstraps
+(default = 200). The function will generate an error if the DeLong
+method is selected with a FOM that is not the Wilcoxon
+statistic on an ROC dataset. The return value of the \code{ORHAnalysis()}is a list
+of 21 elements, Table~\ref{tab:orret}, similar to that of \code{DBMHAnalysis()},
+but instead of 6 pseudovalue derived variance components, it returns
+the elements of the covariance matrix ($Var,Cov1,Cov2,Cov3$) and
+the mean-squares and variance components for the reader and treatment-reader
+effects. The following example illustrates how the returned varainces, covariances and mean squares can be extracted.
+
+<<results='hide'>>=
+retORRoc  <- ORHAnalysis(rocData, fom = "Wilcoxon") 
+print(retORRoc)
+CovOR <- retORRoc$varComp
+cov1 <- CovOR$varCov[3]
+cov2 <- CovOR$varCov[4]
+cov3 <- CovOR$varCov[5]
+varEps <- CovOR$varCov[6]
+msTR <- retORRoc$msTR
+msT <- retORRoc$msT
+@
+
+<<>>=
+print(CovOR)
+@
+
+
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{l>{\arraybackslash}m{0.7\linewidth}}
+    \toprule
+    \multicolumn{1}{c}{Variable name} & \multicolumn{1}{c}{Description} \\
+    \midrule
+    \code{fomArray} & The FOM array of each reader and modality. \\
+    \code{msT}   & The treatment mean square. \\
+    \code{msTR}  & The treatment-reader mean square. \\
+    \code{varComp} & The first two elements contain the reader and modality-reader variance components, the rest contain, in order, Cov1, Cov2, Cov3 and Var. \\
+    \code{fRRRC} & The $f$~statistic for testing the null hypothesis, for the RRRC condition. \\
+    \code{ddfRRRC} & The denominator degrees of freedom of the $f$~statistic, for the RRRC condition. \\
+    \code{pRRRC} & The $p$~value of the significance test of the NH for the RRRC condition. \\
+    \code{ciDiffTrtRRRC} & The confidence intervals and related tests for the reader-averaged FOM differences between pairs of modalities, for the RRRC condition. \\
+    \code{ciAvgRdrEachTrtRRRC} & The confidence intervals and related tests for reader averaged FOM in each modality, for the RRRC condition. \\
+    \code{fFRRC} & The $f$~statistic for testing the null hypothesis, for the FRRC condition. \\
+    \code{ddfFRRC} & The denominator degrees of freedom of the FRRC $f$~statistic. \\
+    \code{pFRRC} & The $p$~value of the significance test of the NH, for the FRRC condition. \\
+    \code{ciDiffTrtFRRC} & The confidence intervals and related tests for the reader-averaged FOM differences between pairs of modalities, for the FRRC condition. \\
+    \code{ciAvgRdrEachTrtFRRC} & The confidence intervals and related tests for reader averaged FOM in each modality, for the FRRC condition. \\
+    \code{varCovEachRdr} & Obuchowski-Rockette Variance and Cov1 estimates for each reader. \\
+    \code{ciDiffTrtEachRdr} & The confidence intervals and related tests of the FOM differences between pairs of modalities for each reader. \\
+    \code{fRRFC} & The $f$~statistic for testing the null hypothesis, for the RRFC condition. \\
+    \code{ddfRRFC} & The denominator degrees of freedom of the $f$~statistic, for the RRFC condition. \\
+    \code{pRRFC} & The $p$~value of the significance test of the NH, for the RRFC condition. \\
+    \code{ciDiffTrtRRFC} & The confidence intervals and related tests for the FOM differences between pairs of modalities, for the RRFC condition. \\
+    \code{ciAvgRdrEachTrtRRFC} & The confidence intervals and related tests for reader averaged FOM in each modality, for the RRFC condition. \\
+    \bottomrule
+    \end{tabular}%
+    \caption{The structure of the object \code{retORHRoc}returned by
+\code{ORHAnalysis}. See text for abbreviations.}
+  \label{tab:orret}%
+\end{table}%
+
+Table~\ref{tab:rescomp} summarizes the results of DBMH and ORH analysis,
+for the latter the results of using different covariance estimation
+methods are shown, and compared to results yielded by OR-DBM MRMC
+(the University of Iowa software). Since ORH yields similar
+results to DBMH (they are identical for the Wilcoxon FOM)
+henceforth we will only show results for DBMH.
+
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{>{\centering\arraybackslash}m{0.2\linewidth}ccc}
+    \toprule
+          & Statistic & \pkg{RJafroc} & OR-DBM MRMC \\
+    \midrule
+          & $\widehat{\theta}_{1\bullet}, \widehat{\theta}_{2\bullet}$ & 0.897, 0.941 & 0.897, 0.941 \\ \hline
+          & $\widehat{\theta}_{1\bullet} - \widehat{\theta}_{2\bullet}$ & -0.0438 & -0.0438 \\
+          & $p$~value & 0.0517 & 0.0517 \\
+    DBMH  & $f$~statistic & 4.46  & 4.46 \\
+          & ddf & 15.3  & 15.26 \\
+          & Confidence interval & (-0.088, 0.000359) & (-0.088,0.00036) \\ \hline
+          & $\widehat{\theta}_{1\bullet} - \widehat{\theta}_{2\bullet}$ & -0.0438 & -0.0438 \\
+          & $p$~value & 0.0517 & 0.0517 \\
+    ORH Jackknife & $f$~statistic & 4.46  & 4.46 \\
+          & ddf & 15.3  & 15.26 \\
+          & Confidence interval & (-0.088, 0.000359) & (-0.088,0.00036) \\ \hline
+          & $\widehat{\theta}_{1\bullet} - \widehat{\theta}_{2\bullet}$ & -0.0438 & -0.0438 \\
+          & $p$~value & 0.0501 & 0.0558 \\
+    ORH Bootstrap boots = 200 & $f$~statistic & 4.56  & 4.21 \\
+          & ddf & 14.5  & 17.07 \\
+          & Confidence interval & (-0.0876, 0.0000164) & (-0.0888, 0.00121) \\ \hline
+          & $\widehat{\theta}_{1\bullet} - \widehat{\theta}_{2\bullet}$ & -0.0438 & -0.0438 \\
+          & $p$~value & 0.0512 & 0.0512 \\
+    ORH DeLong & $f$~statistic & 4.48  & 4.48 \\
+          & ddf & 15.1  & 15.07 \\
+          & Confidence interval & (-0.0879, 0.000267) & (-0.0879,0.00027) \\
+    \bottomrule
+    \end{tabular}%
+    \caption{Results of DBMH and ORH analysis (with different methods
+for estimating the covariance matrix) for \code{rocData} compared
+to that yielded by OR-DBM MRMC (the University of Iowa Windows software).
+Only results for random readers and random cases are shown.}
+  \label{tab:rescomp}%
+\end{table}%
+
+\subsection{Sample size estimation for ROC studies}
+
+For the ROC dataset analyzed above, since random reader
+random case analysis was unable to reject the null hypothesis, a sample
+size estimate may be of interest for the purpose of planning a future
+study. We equate the effect size to the magnitude of the observed
+effect size, 0.0438, which is our best information about the magnitude
+of the true effect size (if the modalities will be further optimized
+prior to the pivotal study, it may be reasonable to posit 0.05 as
+the true effect size, but choosing an unrealistic effect size is 
+not advisable). The following commands perform DBH analysis
+and extracts the relevant pseudovalue variance components and effect
+size for sample size estimation (note since the default FOM is \code{wJAFROC}, and one wishes to analyze ROC data, explicit specification of 
+the fom option is necessary):
+
+<<>>=
+retDbm  <- DBMHAnalysis(rocData, fom = "Wilcoxon") 
+effectSize <- retDbm$ciDiffTrtRRRC$Estimate
+varYTR <- retDbm$varComp$varComp[3]
+varYTC <- retDbm$varComp$varComp[4]
+varYEps <- retDbm$varComp$varComp[6]
+@
+
+
+The function \code{SampleSizeGivenJ()} can be used to determine
+the number of cases necessary to achieve a specified target power
+(default 0.8) for different values of $J$. Since the pilot
+study was conducted with 5 readers and barely reached significance,
+it is of interest to try different values 6:10 as in the code snippet
+below:
+
+<<>>=
+for (J in 6:10) {
+  ret <- SampleSizeGivenJ(J, varYTR, varYTC, varYEps, 
+    effectSize = effectSize) 
+  message("# of readers = ", J, ", estimated # of cases = ", ret$K, "\n",
+    "predicted power = ", signif(ret$power, 4), "\n")
+}
+@
+
+This type of information can be used to test the practicality of different
+study designs. The preceding analysis assumed \code{RRRC}; to get results 
+assuming fixed readers, supply the option \code{randomOption = "CASES"}; 
+to get results assuming fixed cases, supply the option \code{randomOption = "READERS"}. 
+
+Similar analysis can be conducted using the ORH method.
+
+<<>>=
+retOR  <- ORHAnalysis(rocData, fom = "Wilcoxon") 
+effectSize <- retDbm$ciDiffTrtRRRC$Estimate
+CovOR <- retOR$varComp
+cov1 <- CovOR$varCov[3]
+cov2 <- CovOR$varCov[4]
+cov3 <- CovOR$varCov[5]
+varErrOR <- CovOR$varCov[6]
+msTR <- retOR$msTR
+KStar <- length(rocData$NL[1,1,,1])
+for (J in 6:10) {
+  ret <- SampleSizeGivenJ(J, cov1 = cov1, cov2 = cov2, cov3 = cov3, 
+    varEps = varErrOR, msTR = msTR, KStar = KStar, effectSize = effectSize) 
+  message("# of readers = ", J, ", estimated # of cases = ", ret$K, "\n",
+    "predicted power = ", signif(ret$power, 4), "\n")
+}
+@
+
+
+These are identical to those obtained with DBMH analysis.
+
+
+\subsection{Analyzing an FROC dataset}
+
+Analysis of location specific data (free-response or ROI) is not fundamentally
+different from that of ROC paradigm data. As long as the figure of
+merit is a scalar significance testing methods developed for ROC apply
+to the selected FOM. We illustrate analysis of this dataset
+using the function \code{DBMHAnalysis()}, noting that \code{wJAFROC}
+is the default FOM. There are 100 non-diseased and 100
+diseased images in the pre-loaded FROC dataset, with the number of 
+lesions on the diseased images ranging from 1 to 3. The two modalities
+are labeled 4 and 5 (the full dataset, containing data for 5 modalities,
+is available from author DPC). The following example illustrates application of \code{DBMHAnalysis()} 
+to the \code{frocData} \code{dataset} object. Since the default FOM is \code{wJAFROC},  explicit
+specification of the \code{fom} option is unnecessary.
+
+
+<<results='hide',eval=FALSE>>=
+retDbmwJafroc  <- DBMHAnalysis(frocData)
+print(retDbmwJafroc)
+@
+
+The following three examples illustrate other analyses possible with free-response data, with appropriate specification of
+the \code{fom} option. The first example analyzes the data using the \code{wJAFROC1} FOM, which uses the highest rated NL mark on diseased cases and gives equal importance to all diseased cases. The second example uses the \code{JAFROC} FOM, which tends to give extra importance to cases with many lesions but ignores NL marks on diseased cases. The third example illustrates usage of the \code{JAFROC1} FOM, which uses the highest rated NL mark on diseased cases and gives extra importance to cases with many lesions. \emph{The \code{wJAFROC1} and \code{JAFROC1} FOMs should only be used if the dataset contains no non-diseased cases.}
+
+
+<<results='hide', eval=FALSE>>=
+retDbmwJafroc1  <- DBMHAnalysis(frocData, fom = "wJAFROC1")
+print(retDbmwJafroc1)
+
+retDbmJafroc  <- DBMHAnalysis(frocData, fom = "JAFROC")
+print(retDbmJafroc)
+
+retDbmJafroc1  <- DBMHAnalysis(frocData, fom = "JAFROC1")
+print(retDbmJafroc1)
+@
+
+
+Table~\ref{tab:jafrocdbm} shows results of DBMH-analysis, using location specific figures
+of merit (\code{JAFROC}, \code{wJAFROC}, \code{JAFROC1} and \code{wJAFROC1}),
+applied to the free-response dataset and compared to results obtained
+using the Windows version V 4.2.1 of JAFROC software. Only results for random
+readers and random cases are shown. The reason for making \code{wJAFROC}
+the default FOM is that the software is primarily designed
+to analyze free-response data and by doing weighted analysis each diseased
+case gets the same importance in the analysis, regardless of the number
+of lesions in it. With un-weighted analysis, selected by setting the
+FOM option to \code{JAFROC} or \code{JAFROC1}, the
+results can be skewed by cases having a large number of lesions (we
+have encountered a nuclear medicine bone-scan dataset where the number
+of lesions per patient varied from a few to a hundred).
+
+The \code{JAFROC1} FOMs use all highest rated NL marks,
+even those on diseased cases. While \code{JAFROC1} may give higher
+statistical power, it mixes two types of discriminability, that between
+LLs and NLs on normal cases (clinically very important) and that between
+LLs and NLs on abnormal cases (clinically less important). For this
+reason we do not recommend \code{JAFROC1} or \code{wJAFROC1}, unless
+the dataset has no non-diseased cases, in which situation the mixing
+effect just referred to cannot occur. Another issue with the \code{JAFROC1}
+and \code{wJAFROC1} FOMs is that they will depend on
+the case mix (i.e., the proportion of cases that are actually diseased).
+This means that two investigators sampling the same population but
+using different case mixes may get different results, even after sampling
+effects are accounted for. This issue also applies to the ROI paradigm. For these
+reasons we prefer \code{JAFROC}, and particularly \code{wJAFROC}
+FOMs for characterizing free-response performance.
+
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{cccc}
+    \toprule
+    FOM   & Statistic & \pkg{RJafroc} & JAFROC V4.2.1 \\
+    \midrule
+          &  $\widehat{\theta}_{4\bullet}, \widehat{\theta}_{5\bullet}$     & 0.768, 0.714 & 0.768, 0.714 \\ 
+          &  $\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}$ & 0.0548 & 0.0548 \\
+    \code{wJAFROC} &  $CI\left(\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}\right)$      & (0.0328, 0.0769) & (0.0328, 0.0769) \\
+          & $p$~value & 6.46E-06 & <0.0001 \\
+          & $f$~statistic & 24.9  & 24.88 \\
+          & ddf & 54.96 & 54.96 \\ \hline
+          & $\widehat{\theta}_{4\bullet}, \widehat{\theta}_{5\bullet}$      & 0.758, 0.703 & 0.758, 0.703 \\
+          & $\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}$  & 0.0548 & 0.0548 \\
+    \code{JAFROC} &  $CI\left(\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}\right)$     & (0.0315, 0.0780) & (0.0316, 0.0780) \\
+          & $p$~value & 5.63E-06 & <0.0001 \\
+          & $f$~statistic & 21.6  & 21.6 \\
+          & ddf & 236.4 & 236.4 \\ \hline
+          & $\widehat{\theta}_{4\bullet}, \widehat{\theta}_{5\bullet}$      & 0.783, 0.729 & 0.783, 0.729 \\
+          & $\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}$  & 0.054 & 0.054 \\
+    \code{wJAFROC1} &  $CI\left(\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}\right)$     & (0.036, 0.0715) & (0.036, 0.0715) \\
+          & $p$~value & 1.91E-09 & <0.0001 \\
+          & $f$~statistic & 36.5  & 36.51 \\
+          & ddf & 1491  & 1492 \\ \hline
+          & $\widehat{\theta}_{4\bullet}, \widehat{\theta}_{5\bullet}$      & (0.773, 0.720) & (0.773, 0.720) \\
+          & $\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}$      & 0.0535 & 0.0535 \\
+    \code{JAFROC1} & $CI\left(\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}\right)$      & (0.0291, 0.0779) & (0.0291, 0.078) \\
+          & $p$~value & 5.55E-05 & <0.0001 \\
+          & $f$~statistic & 19.3  & 19.4 \\
+          & ddf & 51.07 & 51.07 \\
+    \bottomrule
+    \end{tabular}%
+    \caption{Results of DBMH-analysis, using location specific figures
+of merit, applied to a free-response dataset and compared to results
+obtained using the Windows version of the software. Only results for
+random readers and random cases are shown.}
+  \label{tab:jafrocdbm}%
+\end{table}%
+
+Inferred ROC analysis can be performed on free-response
+data. The following three examples are for ROC data inferred from FROC data
+using different methods of inferring the data: the first example uses the highest rating method, the second uses
+the SongA1 method (average rating) and the third example uses the SongA2 method (stochastic dominance).
+
+<<results='hide',eval=FALSE>>=
+retDbmHrAuc  <- DBMHAnalysis(frocData, fom = "HrAuc") 
+retDbmSongA1  <- DBMHAnalysis(frocData, fom = "SongA1")
+retDbmSongA2  <- DBMHAnalysis(frocData, fom = "SongA2")
+@
+
+
+Table~\ref{tab:inrocdbm} shows results of DBMH-analysis, using inferred ROC figures
+of merit (\code{HrAuc}, \code{SongA1} and \code{SongA2}),
+applied to a free-response dataset and compared to results obtained
+using the Windows version of the software. Only results for random
+readers and random cases are shown. The Song FOMs, particularly
+A2, are computationally quite intensive (to put it in perspective,
+software run times in this field pale in comparison to the effort
+required to acquire the data, often 6 months or more). 
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{cccc}
+    \toprule
+    FOM   & Statistic & \pkg{RJafroc} & JAFROC V4.2 \\
+    \midrule
+          &  $\widehat{\theta}_{4\bullet}, \widehat{\theta}_{5\bullet}$     & 0.851, 0.808 & 0.851, 0.808 \\ 
+          &  $\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}$ & 0.04219 & 0.04219 \\
+    \code{HrAuc} &  $CI\left(\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}\right)$      & (0.0098, 0.0746) & (0.0098, 0.0746) \\
+          & $p$~value & 0.0240 & 0.0240 \\
+          & $f$~statistic & 14.96  & 14.96 \\
+          & ddf & 3.429 & 3.43 \\ \hline
+          & $\widehat{\theta}_{4\bullet}, \widehat{\theta}_{5\bullet}$      & 0.853, 0.808 & 0.853, 0.808 \\
+          & $\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}$  & 0.04505 & 0.04505 \\
+    \code{SongA1} &  $CI\left(\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}\right)$     & (0.0186, 0.0715) & (0.0186, 0.0715) \\
+          & $p$~value & 0.0095 & 0.0095 \\
+          & $f$~statistic & 23.1  & 23.1 \\
+          & ddf & 3.84 & 3.84 \\ \hline
+          & $\widehat{\theta}_{4\bullet}, \widehat{\theta}_{5\bullet}$      & 0.847, 0.800 & 0.847, 0.800 \\
+          & $\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}$  & 0.0468 & 0.0468 \\
+    \code{SongA2} &  $CI\left(\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}\right)$     & (0.0156, 0.0780) & (0.0156, 0.0780) \\
+          & $p$~value & 0.0173 & 0.0173 \\
+          & $f$~statistic & 22.5  & 22.53 \\
+          & ddf & 3.03  & 3.03 \\ 
+    \bottomrule
+    \end{tabular}%
+    \caption{Results of DBMH-analysis, using inferred ROC FOMs
+(\code{HrAuc}, \code{SongA1} and \code{SongA2}), applied
+to the included free-response dataset}
+  \label{tab:inrocdbm}%
+\end{table}%
+
+Besides showing that the package gives identical results
+to JAFROC, the results illustrate some general principles. (1) While
+all methods reject the NH, the $p$~value is considerably smaller for
+weighted JAFROC (6.46e-06) as compared to the inferred ROC methods
+(range 0.0095 to 0.024). While one cannot infer statistical power
+from a comparison of $p$~values on a single dataset, the increased statistical
+power of JAFROC analysis has been confirmed with simulation studies \citep{ChakraStat2002,ChaBerObser2004,ChakraVali2008}
+and is one reason this paradigm is gaining acceptance. (2) The \code{JAFROC}
+FOM for each modality is smaller than the corresponding
+inferred ROC FOMs. This is because of the localization
+requirement, which implies that LLF is always less than the corresponding
+inferred TPF. In other words lesions are only counted towards LLF
+if they are correctly localized, while TPF is only concerned with the
+inferred single rating per case. (3) The effect size is larger for
+\code{JAFROC} (0.0548) than for any of the inferred ROC methods (0.047 for Song A2). 
+The reason for the larger JAFROC effect size is that the figure
+of merit has a larger range over which it can vary, 0 to 1, while
+any ROC FOM is restricted to the range 0.5 to 1. Since 
+effect size appears as the square in sample
+size calculations, this contributes towards JAFROC's higher statistical
+power. 
+
+
+\subsection{Analyzing an ROI dataset}
+
+The package comes pre-loaded with an ROI dataset, \code{roiData}.
+The \code{NL[1:2, 1:5, 1:90, 1:4]} array contains the ratings
+of all non-diseased ROIs while the \code{LL[1:2, 1:5, 1:90, 1:4]}
+array contains the ratings of all diseased ROIs. Since \code{wJAFROC}
+is the default FOM, one needs to explicitly specify the
+\code{ROI} FOM when using the function \code{DBMHAnalysis()} to analyze ROI data. The
+following example illustrates usage of \code{DBMHAnalysis()} to analyze an ROI \code{dataset} object. Note that
+explicit specification of the \code{fom} option is necessary.
+
+<<results='hide',eval=FALSE>>=
+retDbmRoi  <- DBMHAnalysis(roiData, fom = "ROI")
+@
+
+
+The results of RRRC analysis using \pkg{RJafroc} and \proglang{C++} version of JAFROC
+are summarized in Table~\ref{tab:resroi}.
+
+\begin{table}[htbp]
+  \centering
+    \begin{tabular}{cccc}
+    \toprule
+    FOM   & Statistic & \pkg{RJafroc} & JAFROC V4.2 \\
+    \midrule
+          & $\widehat{\theta}_{4\bullet}, \widehat{\theta}_{5\bullet}$      & 0.884, 0.922 & 0.884, 0.922 \\
+          & $\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}$  & -0.038 & -0.038 \\
+    \code{ROI} &  $CI\left(\widehat{\theta}_{4\bullet} - \widehat{\theta}_{5\bullet}\right)$     & (-0.064, -0.0116) & (-0.064, -0.0116) \\
+          & $p$~value & 0.00823 & 0.00823 \\
+          & $f$~statistic & 9.687  & 9.69 \\
+          & ddf & 13.0  & 13.0 \\ 
+    \bottomrule
+    \end{tabular}%
+    \caption{DBMH applied to ROI data analysis. Only results for random
+readers and random cases are shown.}
+  \label{tab:resroi}%
+\end{table}%
+
+
+\subsection{Generating an output report}
+
+The function \code{OutputReport()} is used to to analyze data and generate
+a formatted report closely patterned on that of OR-DBM MRMC and DBM-MRMC. The
+following example illustrates usage of this function for the included ROC dataset object \code{rocData}; the dataset is to be analyzed using the DBMH method and the Wilcoxon statistic as FOM. Since the default \code{method} is DBMH, it does not need explicit
+specification. However, the \code{fom} option needs to be explicitly specified, since the default is \code{wJAFROC}. The \code{showWarnings} option is set to \code{FALSE} as otherwise the program will pause for user input if the named output file already exists. The \code{dataDscrpt} option supplies a  plain English description of the dataset. It is only needed if a \code{dataset} object
+is specified. The default is the variable name of the \code{dataset} object. 
+
+<<message=FALSE,eval=FALSE>>=
+OutputReport(dataset = rocData, fom = "Wilcoxon", 
+  dataDscrpt = "MyROCData", showWarnings = FALSE)
+@
+
+The next example explicitly specifies the name of the output report file, using the \code{reportFile} option. If this option is missing, the function
+will use the file name of the data file or the value of the \code{dataDscrpt}
+option followed by the underscore separated concatenation of \code{method}
+and \code{fom} as the output file name. 
+
+
+<<message=FALSE,eval=FALSE>>=
+OutputReport(dataset = rocData, fom = "Wilcoxon", 
+  reportFile = "MyROCDataAnalysis.txt",  showWarnings = FALSE) 
+@
+
+The next example applies the ORH \code{method} to analyzing the data; since this is different from the default (DBMH) the option needs explicit specification.
+
+<<message=FALSE,eval=FALSE>>=
+OutputReport(dataset = rocData, method = "ORH", fom = "Wilcoxon",
+  showWarnings = FALSE)
+@
+
+The next example is deliberately included as an example of erroneous usage of the function. It will generate an error since the \code{fom} option set to \code{Wilcoxon} is incompatible with the FROC dataset (see Table~\ref{tab:terminology} for valid FOMs with FROC data). 
+
+<<message=FALSE,eval=FALSE>>=
+OutputReport(dataset = frocData, fom = "Wilcoxon",
+  showWarnings = FALSE)
+@
+
+The next example illustrates valid usage assuming \code{wJAFROC} as the FOM; the \code{fom} option does not need to be explicitly specified, since \code{wJAFROC} is the default.
+
+<<message=FALSE,eval=FALSE>>=
+OutputReport(dataset = frocData, method = "ORH",
+  showWarnings = FALSE)
+@
+
+The next example illustrates analysis of FROC using the trapezoidal area under the highest rating inferred ROC curve as the FOM. 
+
+<<message=FALSE,eval=FALSE>>=
+OutputReport(dataset = frocData, fom = "HrAuc",  
+  showWarnings = FALSE)
+@
+
+The final example illustrates analysis of the include ROI dataset using the ROI FOM, which needs to be explcitly specified using the \code{fom} option.
+
+<<message=FALSE,eval=FALSE>>=
+OutputReport(dataset = roiData, method = "ORH", fom = "ROI",  
+  showWarnings = FALSE)
+@
+
+
+Alternatively, one can skip the \code{dataset} object creation step: the following example  reads the data file, analyzes it and generates the output report. 
+
+<<message=FALSE,eval=FALSE>>=
+OutputReport("rocData.xlsx", format = "JAFROC", method = "DBMH", 
+  fom = "Wilcoxon", dataDscrpt = "MyROC2Data",  showWarnings = FALSE)
+@
+
+
+
+\subsection{Saving a data file in a specified format}
+
+The function \code{SaveDataFile()} can be used to save an ROC dataset
+object in any compatible format, thereby allowing it to be analyzed
+with alternate software. The following examples illustrate its usage
+(the OR-DBM MRMC specified ``{*}.csv'' and ``{*}.txt'' files are
+identical except for the different file extensions). 
+
+<<>>=
+SaveDataFile(dataset = rocData, fileName = "rocData2.xlsx", 
+  format = "JAFROC")
+SaveDataFile(dataset = rocData, fileName = "rocData2.csv", format = "MRMC")
+SaveDataFile(dataset = rocData, fileName = "rocData2.lrc", format = "MRMC", 
+  dataDscrpt = "ExampleROCdata")
+SaveDataFile(dataset = rocData, fileName = "rocData2.txt", format = "MRMC", 
+  dataDscrpt = "ExampleROCdata2")
+SaveDataFile(dataset = rocData, fileName = "rocData.imrmc", 
+  format = "iMRMC", dataDscrpt = "ExampleROCdata3") 
+@
+
+\subsection{ROC data visualization}
+
+The package includes a function \code{EmpiricalOpCharac()} for
+plotting trapezoidal ROC curves. The following commands will create
+trapezoidal ROC curves for all combinations of modalities and readers
+in the \code{rocData} dataset:
+
+<<>>=
+plotM <- c(1:2)
+plotR <- c(1:5)
+plotROC <- EmpiricalOpCharac(data = rocData, trts = plotM, rdrs = plotR, 
+  opChType = "ROC")
+@
+
+
+The \code{trts = plotM} argument tells the function to plot
+both modalities, and \code{rdrs = plotR} tells it to plot data
+for all five reader in each modality. The result of printing \code{plotROC},
+a \pkg{ggplot2} object \citep{WickhamGgplot2Eleg2009}, is Fig. 1. Since ROC analysis is
+a subspecialty of statistics, and not all users may be familiar with
+it, we point out the obvious: an operating characteristic that approaches 
+the top-left corner has greater area under the trapezoidal
+curve, which implies greater performance. The ROC curve for a guessing
+observer would be the diagonal line connecting $(0,0)$ to $(1,1)$.
+
+
+Fig. \subref*{fig:rocroc} shows the large variability in performance between
+the readers, which is one reason one needs to adequately sample the
+reader population. The following construct can be used to plot operating
+characteristics for each modality, averaged over readers (Fig. \subref*{fig:rocavgroc}).
+
+<<>>=
+plotMAvg <- list(1, 2)
+plotRAvg <- list(c(1:5),c(1:5))
+plotRocAvg <- EmpiricalOpCharac(dataset = rocData, trts = plotMAvg, 
+  rdrs = plotRAvg, opChType = "ROC")
+@
+
+\begin{figure}[htpb]
+\centering
+\subfloat[{}]{\label{fig:rocroc}
+<<out.width= '0.49\\linewidth', fig.show='hold', echo=FALSE>>=
+print(plotROC$ROCPlot)
+@
+}
+\subfloat[{}]{\label{fig:rocavgroc}
+<<out.width= '0.49\\linewidth', fig.show='hold', echo=FALSE>>=
+print(plotRocAvg$ROCPlot)
+@
+}
+\caption{\protect\subref{fig:rocroc} shows empirical receiver operating
+characteristics for all 5 readers in both modalities. \protect\subref{fig:rocavgroc}
+shows reader-averaged receiver operating characteristics for the two
+modalities.}
+\label{fig:rocfig}
+\end{figure}
+
+
+This tells the function to create two plots, one per modality, where
+each plot is averaged over all 5 readers.
+
+\subsection{Free-response data visualization}
+
+The function \code{EmpiricalOpCharac()} can be used to plot trapezoidal
+ROC/AFROC/FROC curves. The following commands will create trapezoidal
+ROC curves for all 8 combinations of 2 modalities and 4 readers in
+the \code{frocData} dataset, Fig. \subref*{fig:frocroc}, and reader-averaged ROC,
+Fig. \subref*{fig:frocavgroc}, reader-averaged AFROC, Fig. \subref*{fig:frocafroc} and reader-averaged
+FROC curves,  Fig. \subref*{fig:frocfroc}.
+
+<<>>=
+plotM <- c(1:2)
+plotR <- c(1:4)
+plotROC <- EmpiricalOpCharac(data = frocData, trts = plotM, rdrs = plotR, 
+  opChType = "ROC")
+
+plotMAvg <- list(1, 2)
+plotRAvg <- list(c(1:4),c(1:4))
+plotRocAvg <- EmpiricalOpCharac(data = frocData, trts = plotMAvg, 
+  rdrs = plotRAvg, opChType = "ROC")
+
+plotMAvg <- list(1, 2)
+plotRAvg <- list(c(1:4),c(1:4))
+plotAFROC <- EmpiricalOpCharac(data = frocData, trts = plotMAvg, 
+  rdrs = plotRAvg, opChType = "AFROC")
+
+plotMAvg <- list(1, 2)
+plotRAvg <- list(c(1:4),c(1:4))
+plotFROC <- EmpiricalOpCharac(data = frocData, trts = plotMAvg, 
+  rdrs = plotRAvg, opChType = "FROC")
+
+@
+
+
+Panel \protect\subref{fig:frocroc} does show, for each reader, coded by color, that the dotted
+lines are above the corresponding solid lines. This is confirmed in
+the averaged ROC, AFROC and FROC curves (panels \protect\subref{fig:frocavgroc}, \protect\subref{fig:frocafroc}
+and \protect\subref{fig:frocfroc}). Panel \protect\subref{fig:frocafroc}
+ shows the difference that was found to be significant by DBMH/ORH
+analysis using both \code{wJAFROC} and \code{HrAuc} figures
+of merit.
+
+\begin{figure}[!ht]
+\centering
+\subfloat[{}]{\label{fig:frocroc}
+<<out.width= '0.49\\linewidth', fig.show='hold', echo=FALSE>>=
+print(plotROC$ROCPlot)
+@
+}
+\subfloat[{}]{\label{fig:frocavgroc}
+<<out.width= '0.49\\linewidth', fig.show='hold', echo=FALSE>>=
+print(plotRocAvg$ROCPlot)
+@
+} \\
+\subfloat[{}]{\label{fig:frocafroc}
+<<out.width= '0.49\\linewidth', fig.show='hold', echo=FALSE>>=
+print(plotAFROC$AFROCPlot)
+@
+}
+\subfloat[{}]{\label{fig:frocfroc}
+<<out.width= '0.49\\linewidth', fig.show='hold', echo=FALSE>>=
+print(plotFROC$FROCPlot)
+@
+}
+\caption{\protect\subref{fig:frocroc} shows the empirical highest
+rating inferred ROC curves for all combinations of modalities and
+readers. \protect\subref{fig:frocavgroc} shows the reader-averaged inferred
+ROC curves for both modalities. \protect\subref{fig:frocafroc} shows the
+reader-averaged AFROC curves for both modalities. \protect\subref{fig:frocfroc}
+shows the reader-averaged FROC curves for both modalities.}
+\label{fig:frocfig}
+\end{figure}
+
+The numbering of the readers is not sequential; the reader IDs are
+actually string labels, and in this dataset for some reason the experimenter
+chose not to use the sequential labels 1 - 4. Comparing panels \protect\subref{fig:frocavgroc}
+and \protect\subref{fig:frocafroc} one can appreciate that the AFROC curve is below the corresponding
+ROC curve, and that the difference is areas is larger for the AFROC
+than the ROC. Panel \protect\subref{fig:frocfroc} shows the averaged FROC curves; although used
+by some investigators, this is a poor summary of performance. Even
+the partial area under the FROC to the left of some defined abscissa
+value is not a good FOM \citep{YoudenIndFor1950,HillisAComp2007}, as it does not give
+credit for non-diseased images with no marks (these are actually high
+confidence correct decisions - i.e., perfect decisions).
+
+
+\subsection{Graphical user interface}
+\label{subsec:gui}
+It is assumed that \pkg{RJafroc} has been installed from the CRAN website and 
+loaded using the \code{library()} function. The graphical user interface (GUI) 
+is invoked by the function \code{RJafrocGui()}:
+<<eval=FALSE>>=
+RJafrocGui()
+@
+
+Due to a bug in RStudio's internal browser (Windows Version 0.99.467), which 
+prevents saving plot files, Windows users may wish to invoke it as follows:
+<<eval=FALSE>>=
+RJafrocGui(useBrowser = TRUE)
+@
+
+Fig.~\ref{fig:opening} shows the opening screen of the GUI. Clicking on 
+``Choose File'' opens a standard file-select window (Finder or Explorer) 
+that allows one to select the desired data file. In Fig.~\ref{fig:selectFile}, 
+the included FROC data file ``frocData.xlsx'' has been selected 
+(see subsection~\ref{subsec:datastr} for details of this dataset). 
+Clicking on ``Open'' shows Fig.~\ref{fig:dataviewer}. The ``Data Viewer'' 
+panel allows one to look at the data (this capability is not available 
+in the Windows JAFROC software version 4.2.1). In Fig.~\ref{fig:dataviewer} the ``Truth'' 
+panel is shown. Clicking on NL or LL will show the corresponding ratings data for NLs and LLs,
+respectively. The ``Data Conversion'' panel allows the dataset to be saved in other formats, e.g., highest 
+rating inferred ROC.  Clicking on ``Analysis'' shows Fig.~\ref{fig:analysis}. Fig.~\ref{fig:report} 
+shows the result of clicking on the ``Analysis'' tab in Fig.~\ref{fig:analysis}. This screen shows a 
+summary of the dataset, and allows selection of analysis method, the FOM and the significance level 
+of the testing. Clicking on ``Analyze'' shows the results of the analysis, Fig.~\ref{fig:report}. 
+The format closely follows that of Windows JAFROC. Clicking on the ``Save Report'' button allows 
+the results to be saved to a text file.
+
+\begin{figure}[!ht]
+\centering
+\includegraphics{Opening}
+\caption{The opening screen of the graphical user interface to \pkg{RJafroc}. 
+The ``Choose File'' button allows selection of the data file to be analyzed.}
+\label{fig:opening}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.5\textwidth]{SelectFile}
+\caption{Selecting the data file to be analyzed. All shown file formats are supported.}
+\label{fig:selectFile}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.8\textwidth]{DataViewer}
+\caption{The screen shot following selection of the file to be analyzed, which allows the data to viewed in 
+the ``Data Viewer'' panel.}
+\label{fig:dataviewer}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.8\textwidth]{Analysis}
+\caption{This screen shows a summary of the dataset, and allows selection of analysis method, the FOM and the significance level of the testing.}
+\label{fig:analysis}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.8\textwidth]{Report}
+\caption{This screen shot shows the results of the analysis.  The format closely follows that of Windows JAFROC. Clicking on the 
+``Save'' button allows the results to be saved to a text file.}
+\label{fig:report}
+\end{figure}
+
+\subsection{Software comparison}
+
+Table~\ref{tab:sftwrcomp} compares the features and capabilities of existing online
+software and \pkg{RJafroc}: data file format, whether they are
+open-source, and if so, the programming language expertise needed
+to understand them, whether they are cross platform applications,
+whether individual modules can be called from other languages, whether
+they include integrated visualization routines, and the degree to
+which they accommodate location paradigms.
+
+
+\begin{table}[!ht]
+  \centering
+    \begin{tabular}{>{\centering\arraybackslash}m{0.2\linewidth}>{\centering\arraybackslash}m{0.15\linewidth}
+    >{\centering\arraybackslash}m{0.15\linewidth}>{\centering\arraybackslash}m{0.15\linewidth}>{\centering\arraybackslash}m{0.15\linewidth}}
+    \toprule
+    Software & OR-DBM MRMC & iMRMC & JAFROC & \pkg{RJafroc} \\
+    \midrule
+    Data entry & Plain text in specified format & Plain text in specified format & Excel file in JAFROC format & All text and Excel file formats \\ \hline
+    Open Source/Language & No/\proglang{Fortran/C++} & Yes/\proglang{Java} & No/\proglang{C++} & Yes/\proglang{R} \\ \hline
+    Cross platform & No    & Yes   & No    & Yes \\ \hline
+    Call from other Languages & No    & No    & No    & Yes \\ \hline
+    ROC curve fitting & Yes   & No    & No    & No \\ \hline
+    Integrated data visualization capability & No    & Yes   & Yes   & Yes \\ \hline
+    Localization paradigms (ROI and FROC) & No    & No    & Yes   & Yes \\ \hline
+    Predicting search paradigm operating characteristics & No    & No    & Yes   & Yes \\ \hline
+    Saving an ROC dataset in a different format & No    & No    & No    & Yes \\
+    \bottomrule
+    \end{tabular}%
+    \caption{Software capabilities comparison of available methods of
+analyzing observer performance data}
+  \label{tab:sftwrcomp}%
+\end{table}%
+
+
+
+\section{Discussion}
+
+This paper has covered several topics relevant
+to assessment of medical imaging systems. These include the choice
+of data collection paradigm (ROC, FROC or ROI), the choice of figure
+of merit(the Wilcoxon statistic for ROC data, weighted area under 
+AFROC and several other measures for FROC data, and the trapezoidal 
+area under the ROC' curve for ROI data), significance-testing methods 
+(DBMH and ORH), and sample-size estimation for ROC studies. Data 
+visualization methods have been described for ROC and FROC studies. 
+Future plans call for implementing curve-fitting (as opposed to 
+empirical curves) algorithms that have been described in the literature 
+for ROC data, and methods under development, see below, for FROC data. In our experience
+statisticians tend to favor the empirical FOMs, as these
+are least based on what might be considered as ``restrictive'' assumptions.
+However, when operating points do not span the ROC x-axis adequately 
+(e.g., they are bunched close to the left edge of the ROC plot),
+then empirical FOMs become quite dependent on the spread
+of the points, which can lead to misleading inferences. For this reason it 
+is important to implement curve-fitting procedures (these are available for 
+ROC data in the University of Iowa and University of Chicago website software, 
+but these are not open-source).
+
+A preliminary sample-size method for free-response studies is available
+on the JAFROC website. The problem is essentially one of determining
+the JAFROC effect size that would correspond to a particular inferred
+ROC effect size. Effect sizes are well understood in ROC methodology,
+since the paradigm dates to the early 1940s (it
+was originally introduced \citep{HildenTheArea1991} to measure performance of radar
+in detecting enemy aircraft). The other FOMs, particularly FROC, are less
+well understood, as evidenced, in the computer aided detection field, 
+by the widespread usage of the FROC curve to measure performance (we have seen 
+that this is a poor representation of performance, a fact recognized by at least 
+one other FDA researcher familiar with this research area \citep{PopescuNonparSing2011}). Attempts to analyze 
+FROC data began in the late 70s \citep{BunchHamAFree1978} and some progress was made in the late 
+80s and early 90s\citep{ChaBreDigital1986,ChakraMax1989,ChaWinFree1990}. However, until 2004 \citep{ChaBerObser2004} there was no validated way
+of analyzing FROC data. To assign a realistic effect size for an FROC figure of
+merit one needs a model for fitting FROC data that also predicts
+ROC data. Such a model (the Chakraborty search model) has been introduced 
+\citep{ChakraASear2006,ChakraROC2006} and a preliminary maximum
+likelihood estimation method is implemented in the Windows version
+of JAFROC software. The fits are performed for each reader and modality; 
+for each modality the 3 search-model parameters per reader are averaged, 
+and the average values are used to predict two AFROC and two ROC curves, 
+one per modality. This relates the AFROC area effect size to the ROC 
+area effect size (the former is larger) and permits sample size estimation 
+using the AFROC area as the FOM. For improved reliability, 
+we are currently working on enhancements to the estimation
+procedure (essentially by imposing a constraint).
+Another direction for improvement is accommodating the LROC paradigm, 
+currently unsupported by any easily accessible software, but clinically 
+quite important. We also plan to implement the analytical ROI method in a future update.
+
+The choice of data collection paradigm depends on the clinical application. 
+The FROC paradigm is appropriate for the chest lung nodule detection task, 
+but detection of diffuse chest disease (e.g., interstitial lung disease or pneumoconiosis) 
+is appropriately analyzed by the ROC paradigm.  Myocardial perfusion imaging, 
+which involves scoring each of three main vascular territories in the heart \citep{Volokh2006}, 
+is appropriately analyzed by the ROI method. There are also situations where 
+the LROC paradigm is appropriate. The idea is to match the paradigm to the 
+clinical task, and this requires clinical input and as one may expect, 
+``one size does not fit all''. This is the main reason why we have embraced 
+all data collection paradigms in our software. It is our hope that this 
+open source release will stimulate further research, particularly in the 
+extensions to ROC methodology.
+
+
+
+\section{Acknowledgments}
+
+We are grateful to Dr. Federica Zanca and Dr. Kevin Berbaum for providing
+us with datasets. Dr. Hong-Jun Yoon did much of the original Visual
+\proglang{C++} programming for the Windows version of JAFROC. Funding
+from the Department of Health and Human Services, National Institutes
+of Health (R01-EB005243), supported this work.
+
+\bibliography{RJafroc}
+\newpage
+\appendix
+\setcounter{equation}{0}
+\renewcommand{\theequation}{\Alph{section}.\arabic{equation}}
+\setcounter{table}{0}
+\renewcommand{\thetable}{\Alph{section}.\arabic{table}}
+\section{Appendices}
+\label{sec:Appendices}
+
+\subsection[{Other free-response FOMs implemented in RJafroc}]{Other free-response FOMs implemented in \pkg{RJafroc}}
+\label{subsec:otherfroc}
+Free-response data can be used to infer maximum sensitivity and specificity,
+corresponding to the highest operating point on the ROC curve, excluding
+the trivial point at $(1,1)$. These are defined by
+
+\[
+\begin{array}{l}
+\widehat{\theta}_{ij}^{ISe}=\frac{1}{{K_{2}}}\sum\limits _{{k_{2}}=1}^{{K_{2}}}{\phi\left({max\left({r_{ij{k_{2}}2**}}\right)}\right)}\\
+\widehat{\theta}_{ij}^{ISp}=1-\frac{1}{{K_{1}}}\sum\limits _{{k_{1}}=1}^{{K_{1}}}{\phi\left({max\left({r_{ij{k_{1}}1*1}}\right)}\right)}
+\end{array}
+\]
+
+The JAFROC FOM is defined as the probability that lesions are rated
+higher than the highest noise on \emph{normal} images:
+
+\begin{equation}
+\widehat{\theta}_{ij}^{JAFROC}=\frac{1}{{N_{2}}{{K_{1}}}}\sum\limits _{{k_{2}}=1}^{{K_{2}}}{\sum\limits _{{l_{2}}=1}^{{N_{{k_{2}}2}}}{{\sum\limits _{{k_{1}}=1}^{{K_{1}}}{\psi\left({max({r_{ij{k_{1}}1*1}}),{r_{ij{k_{2}}2{l_{2}}2}}}\right)}}}}\label{eq:35}
+\end{equation}
+
+
+The corresponding JAFROC1 FOM, which includes the highest noise on
+abnormal images, is defined by
+
+\begin{align}
+\widehat{\theta}_{ij}^{JAFROC1}=\frac{1}{{N_{2}}\left({{{K_{1}}+{K_{2}}}}\right)}\sum\limits _{{k_{2}}=1}^{{K_{2}}}\sum\limits _{{l_{2}}=1}^{{N_{{k_{2}}2}}}\left[\sum\limits _{{k_{1}}=1}^{{K_{1}}}{\psi\left({max({r_{ij{k_{1}}1*1}}),{r_{ij{k_{2}}2{l_{2}}2}}}\right)} \right. \nonumber \\
+\left. +\sum\limits _{{k_{2}'}=1}^{{K_{2}}}{\psi\left({max({r_{ij{k_{2}'}2*1}}),{r_{ij{k_{2}}2{l_{2}}2}}}\right)}\right]
+\label{eq:36}
+\end{align}
+
+
+The maximum LLF FOM is defined by
+
+\begin{equation}
+\widehat{\theta}_{ij}^{\max LLF}=\frac{{\sum\limits _{{k_{2}}=1}^{{K_{2}}}{\sum\limits _{{l_{2}}=1}^{{N_{{k_{2}}2}}}{\phi\left({r_{ij{k_{2}}2{l_{2}}2}}\right)}}}}{{N_{2}}}\label{eq:37}
+\end{equation}
+
+Here $\phi\left(x\right)=1$ is $x$ is finite and $\phi\left({-\infty}\right)=0.$ The maximum NLF FOM is defined by
+
+\begin{equation}
+\widehat{\theta}_{ij}^{\max NLF}=\frac{{\sum\limits _{{k_{1}}=1}^{{K_{1}}}{\sum\limits _{{k_{2}}=1}^{{K_{2}}}{\sum\limits _{{l_{i}}=1}^{{N_{{k_{t}}t1}}}{\phi\left({r_{ij{k_{t}}t{l_{1}}1}}\right)}}}}}{{{K_{1}}+{K_{2}}}}\label{eq:38}
+\end{equation}
+
+An exponentially transformed specificity FOM \citep{PopescuNonparSing2011} is
+defined by:
+
+\begin{equation}
+\widehat{\theta}_{ij}^{IExpTrnsSp}=\exp\left({-\frac{{\sum\limits _{{k_{1}}=1}^{{K_{1}}}{\sum\limits _{{l_{i}}=1}^{{N_{{k_{1}}11}}}{\phi\left({r_{ij{k_{1}}1{l_{1}}1}}\right)}}}}{{K_{1}}}}\right)\label{eq:39}
+\end{equation}
+
+
+These are summarized in Table~\ref{tab:frocfomsum}:
+
+\begin{table}[htbp]
+  \centering
+  \caption{}
+    \begin{tabular}{>{\centering\arraybackslash}m{0.1\linewidth}>{\centering\arraybackslash}m{0.3\linewidth}
+    >{\centering\arraybackslash}m{0.1\linewidth}>{\centering\arraybackslash}m{0.3\linewidth}}    
+    \toprule
+    Paradigm & Description of FOM & Symbol & Comments \\
+    \midrule
+          & Highest rating inferred sensitivity &  $\widehat{\theta}_{ij}^{ISe}$     & Case-level inferred sensitivity \\
+          & Highest rating inferred specificity &  $\widehat{\theta}_{ij}^{ISp}$     & Case-level inferred specificity \\
+          & Exponentially transformed specificity & $\widehat{\theta}_{ij}^{IExpTrnsSp}$      & Popescu suggestion \\
+    FROC  & JAFROC &   $\widehat{\theta}_{ij}^{JAFROC}$    & Does not use weighting \\
+          & JAFROC1 &  $\widehat{\theta}_{ij}^{JAFROC1}$      & Does not use weighting \\
+          & Maximum ordinate of FROC &   $\widehat{\theta}_{ij}^{maxLLF}$    & Lesion-level "sensitivity" \\
+          & Maximum abscissa of FROC &   $\widehat{\theta}_{ij}^{maxNLF}$    & Lesion-level "inverse specificity", lower values preferred \\  
+    \bottomrule
+    \end{tabular}%
+  \label{tab:frocfomsum}%
+\end{table}%
+
+\subsection{Special cases of DBMH analysis}
+\label{subsec:spedbm}
+
+\subsubsection{Fixed-reader random-case (FRRC) analysis}
+
+When readers are treated as a fixed effect, the appropriate
+$f$~statistic for testing the null hypothesis is
+
+\begin{equation}
+{F_{DBM|R}}=\frac{{MS_{Y}\left(T\right)}}{{MS_{Y}\left({TC}\right)}}\label{eq:40}
+\end{equation}
+
+
+This is distributed as an $f$~statistic with \emph{$ndf=I-1$}, and
+\emph{$ddf=(I-1)(K-1)$}:
+
+\begin{equation}
+{F_{DBM|R}}\sim{F_{I-1,\left({I-1}\right)\left({K-1}\right)}}\label{eq:41}
+\end{equation}
+
+
+The critical value of the statistic is ${F_{1-\alpha;I-1,\left({I-1}\right)\left({K-1}\right)}}$
+which is that value such that fraction $\left({1-\alpha}\right)$
+of the distribution lies to the left of the critical value. The null
+hypothesis is rejected if the observed value of the $f$~statistic exceeds
+the critical value:
+
+\begin{equation}
+{F_{DBM|R}}>{F_{1-\alpha;I-1,\left({I-1}\right)\left({K-1}\right)}}\label{eq:42}
+\end{equation}
+
+
+The $p$-value of the test is the probability that a random sample
+from the distribution exceeds the observed value:
+
+\begin{equation}
+p={\mathop{\rm P}\nolimits}\left({F>{F_{DBM|R}}|F\sim{F_{I-1,\left({I-1}\right)\left({K-1}\right)}}}\right)\label{eq:43}
+\end{equation}
+
+
+The $\left({1-\alpha}\right)$ confidence interval is given by:
+
+\begin{equation}
+CI_{1-\alpha}=\left(\widehat{\theta}_{i\bullet}-\widehat{\theta}_{i'\bullet}\right)\pm{t_{\alpha/2;(I-1)(K-1)}}\sqrt{\frac{2}{{JK}}MS_{Y}\left({TC}\right)}\label{eq:44}
+\end{equation}
+
+
+
+\subsubsection{Random-reader fixed case (RRFC) analysis}
+
+When cases are treated as a fixed effect, the appropriate $f$~statistic
+for testing the null hypothesis is
+
+\begin{equation}
+{F_{DBM|C}}=\frac{{MS_{Y}\left(T\right)}}{{MS_{Y}\left({TR}\right)}}\label{eq:45}
+\end{equation}
+
+
+This is distributed as an $f$~statistic with \emph{$ndf=I-1$}, and
+\emph{$ddf=(I-1)(J-1)$}:
+
+\begin{equation}
+{F_{DBM|C}}\sim{F_{I-1,\left({I-1}\right)\left({J-1}\right)}}\label{eq:46}
+\end{equation}
+
+
+The critical value of the statistic is ${F_{1-\alpha;I-1,\left({I-1}\right)\left({J-1}\right)}}$
+which is that value such that fraction $\left({1-\alpha}\right)$
+of the distribution lies to the left of the critical value. The null
+hypothesis is rejected if the observed value of the $f$~statistic exceeds
+the critical value:
+
+\begin{equation}
+{F_{DBM|C}}>{F_{1-\alpha;I-1,\left({I-1}\right)\left({J-1}\right)}}\label{eq:47}
+\end{equation}
+
+
+The $p$-value of the test is the probability that a random sample
+from the distribution exceeds the observed value:
+
+\begin{equation}
+p={\mathop{\rm P}\nolimits}\left({F>{F_{DBM|C}}|F\sim{F_{I-1,\left({I-1}\right)\left({J-1}\right)}}}\right)\label{eq:48}
+\end{equation}
+
+
+The $\left({1-\alpha}\right)$ confidence interval is given by:
+
+\begin{equation}
+CI_{1-\alpha}=\left(\widehat{\theta}_{i\bullet}-\widehat{\theta}_{i'\bullet}\right)\pm{t_{\alpha/2;(I-1)(J-1)}}\sqrt{\frac{2}{{JK}}MS_{Y}\left({TR}\right)}\label{eq:49}
+\end{equation}
+
+\subsection{Special cases of ORH analysis}
+\label{subsec:orspcases}
+
+\subsubsection{Fixed-reader random-case (FRRC) analysis}
+
+When readers are treated as a fixed effect, the appropriate $f$~statistic
+for testing the null hypothesis is
+
+\begin{equation}
+{F_{OR|R}}=\frac{{MS\left(T\right)}}{{\left[{\widehat{Var}-\widehat{Cov_{1}}+\left({J-1}\right)H\left({\widehat{Cov_{2}}-\widehat{Cov_{3}}}\right)}\right]}}\label{eq:50}
+\end{equation}
+
+
+This is distributed as an $f$~statistic with {$ndf=I-1$}, and
+{$ddf=\infty$}, or equivalently a chi-square distribution with
+I-1 degrees of freedom:
+
+\begin{equation}
+{F_{OR|R}}\sim{F_{I-1,\infty}}=\chi_{I-1}^{2}\label{eq:51}
+\end{equation}
+
+
+The critical value of the statistic is ${F_{1-\alpha;I-1,\infty}}=\chi_{1-\alpha;I-1,}^{2}$ which is
+that value such that fraction $\left({1-\alpha}\right)$ of the distribution
+lies to the left of the critical value. The null hypothesis is rejected
+if the observed value of the $f$~statistic exceeds the critical value:
+
+\begin{equation}
+{F_{OR|R}}>{F_{1-\alpha;I-1,\infty}}=\chi_{1-\alpha;I-1,}^{2}\label{eq:52}
+\end{equation}
+
+
+The $p$~value of the test is the probability that a random sample from
+the distribution exceeds the observed value:
+
+\begin{equation}
+p={\mathop{\rm P}\nolimits}\left({F>{F_{OR|R}}|F\sim{F_{I-1,\infty}}}\right)\label{eq:53}
+\end{equation}
+
+
+The $\left({1-\alpha}\right)$ confidence interval is given by:
+
+\begin{equation}
+CI_{1-\alpha}=\left(\widehat{\theta}_{i\bullet}-\widehat{\theta}_{i'\bullet}\right)\pm{t_{\alpha/2;\infty}}\sqrt{\frac{2}{J}\left[{\widehat{Var}-\widehat{Co{v_{1}}}+\left({J-1}\right)H\left({\widehat{Co{v_{2}}}-\widehat{Co{v_{3}}}}\right)}\right]}\label{eq:54}
+\end{equation}
+
+\subsubsection{Random-reader fixed case (RRFC) analysis}
+
+When cases are treated as a fixed effect, the appropriate $f$~statistic
+for testing the null hypothesis is:
+
+\begin{equation}
+{F_{OR|C}}=\frac{{MS\left(T\right)}}{{MS\left({TR}\right)}}\label{eq:55}
+\end{equation}
+
+
+This is distributed as:
+
+\begin{equation}
+{F_{OR|C}}\sim{F_{I-1,\left({I-1}\right)\left({J-1}\right)}}\label{eq:56}
+\end{equation}
+
+
+The critical value of the statistic is ${F_{1-\alpha;I-1,\left({I-1}\right)\left({J-1}\right)}}$ which is
+that value such that fraction $\left({1-\alpha}\right)$ of the distribution
+lies to the left of the critical value. The null hypothesis is rejected
+if the observed value of the $f$~statistic exceeds the critical value:
+
+\begin{equation}
+{F_{DBM|C}}>{F_{1-\alpha;I-1,\left({I-1}\right)\left({J-1}\right)}}\label{eq:57}
+\end{equation}
+
+
+The $p$~value of the test is the probability that a random sample from
+the distribution exceeds the observed value:
+
+\begin{equation}
+p={\mathop{\rm P}\nolimits}\left({F>{F_{DBM|C}}|F\sim{F_{I-1,\left({I-1}\right)\left({J-1}\right)}}}\right)\label{eq:58}
+\end{equation}
+
+
+The $\left({1-\alpha}\right)$ confidence interval is given by:
+
+\begin{equation}
+C{I_{1-\alpha}}=\left(\widehat{\theta}_{i\bullet}-\widehat{\theta}_{i'\bullet}\right)\pm{t_{\alpha/2;(I-1)(K-1)}}\sqrt{\frac{2}{J}MS\left({TR}\right)}\label{eq:59}
+\end{equation}
+
+\subsection{Details of ROI simulator}
+\label{subsec:roisimu}
+Since it is based on the Roe-Metz simulator for ROC data, we begin
+by describing the ROC data simulator for MRMC studies. For each modality,
+it consists of two unit variance distributions separated by an amount
+that determines AUC in that modality. The readers and cases are modeled
+by random samples and there is an error term that depends on treatments,
+readers and cases. The Roe and Metz model is \citep{RoeMetzDorBerMetzMeth1997}:
+
+\begin{equation}
+{Z_{ij{k_{t}}t}}={\mu_{t}}+{\tau_{it}}+{C_{{k_{t}}t}}+{R_{{j_{t}}t}}+{\left({\tau C}\right)_{i{k_{t}}t}}+{\left({\tau R}\right)_{ijt}}+{\left({RC}\right)_{j{k_{t}}t}}+{\varepsilon_{ij{k_{t}}t}}\label{eq:60}
+\end{equation}
+
+
+The fixed effects in the simulator are described by
+
+\begin{equation}
+\begin{array}{l}
+{\mu_{1}}=0;{\mu_{2}}=\mu\\
+{\tau_{i,1}}=0;{\tau_{1,2}}=0;{\tau_{2,1}}=\tau
+\end{array}\label{eq:61}
+\end{equation}
+
+
+The random effects are described by
+
+\begin{equation}
+\begin{array}{l}
+{C_{{k_{t}}t}}\sim N\left({0,\sigma_{C}^{2}}\right)\\
+{R_{jt}}\sim N\left({0,\sigma_{R}^{2}}\right)\\
+{\left({\tau C}\right)_{i{k_{t}}t}}\sim N\left({0,\sigma_{\tau C}^{2}}\right)\\
+{\left({\tau R}\right)_{ijt}}\sim N\left({0,\sigma_{\tau R}^{2}}\right)\\
+{\left({RC}\right)_{j{k_{t}}t}}\sim N\left({0,\sigma_{RC}^{2}}\right)\\
+{\varepsilon_{ij{k_{t}}t}}\sim N\left({0,\sigma_{\varepsilon}^{2}}\right)
+\end{array}\label{eq:62}
+\end{equation}
+
+To preserve the unit variance character of the model, the following
+constraint is applied:
+
+\begin{equation}
+\sigma_{C}^{2}+\sigma_{\tau C}^{2}+\sigma_{RC}^{2}+\sigma_{\varepsilon}^{2}=1\label{eq:63}
+\end{equation}
+
+
+Since ROI data is a special case of FROC data, we denote the ROI rating
+by ${r_{ij{k_{t}}t{l_{s}}s}}$ where on${l_{1}}=1,2,\ldots,Q$ non-diseased
+cases, where $Q$ is the number of ROIs (or ``quadrants'') on every
+case, and on diseased cases ${l_{2}}=1,2,...,{q_{{k_{2}}}}$, where
+${q_{{k_{2}}}}$ is the number of diseased ROIs on diseased case ${k_{2}}2$,
+and ${l_{1}}=1,2,\ldots,Q-q_{{k_{2}}}$ on diseased case ${k_{2}}2$.
+
+The ROI model is defined by:
+
+\begin{align}
+{Z_{ij{k_{t}}t}} &= {\mu_{t}}+{\tau_{it}}+{C_{{k_{t}}t}}+{R_{{j_{t}}t}}+{\left({\tau C}\right)_{i{k_{t}}t}}+{\left({\tau R}\right)_{ijt}} +{\left({RC}\right)_{j{k_{t}}t}}  \nonumber \\
+& +\left(CL\right)_{k_{t}tl_{s}s}+\left(\tau CL\right)_{ik_{t}tl_{s}s}+\left(RCL\right)_{jk_{t}tl_{s}s}+{\varepsilon_{ij{k_{t}}tl_{s}s}}
+\end{align}
+
+
+The idea is to split up each term containing the case factor into
+two terms, one containing the case factor, and the other an additional
+location factor L (for location) with levels defined by , such that
+the net case variance is unaltered. The following two terms do not
+contain the case factor and hence do not need to be split.
+
+\[
+\begin{array}{l}
+{R_{jt}}\sim N\left({0,\sigma_{R}^{2}}\right)\\
+{\left({\tau R}\right)_{ijt}}\sim N\left({0,\sigma_{\tau R}^{2}}\right)
+\end{array}
+\]
+
+
+The following term containing only the case factor is split up as
+follows [the term () controls the correlation between the samples
+from the different locations on the same case]:
+
+\[
+\begin{array}{l}
+{C_{{k_{t}}t}}\sim N\left({0,{\rho_{C}}\sigma_{C}^{2}}\right)\\
+{\left(CL\right)_{k_{t}tl_{s}s}}\sim N\left({0,{\left(1-\rho_{C}\right)}\sigma_{C}^{2}}\right)
+\end{array}
+\]
+
+
+Likewise, the treatment-case factor is split up as follows:
+
+\[
+\begin{array}{l}
+{\tau C_{i{k_{t}}t}}\sim N\left({0,{\rho_{\tau C}}\sigma_{\tau C}^{2}}\right)\\
+{\left(\tau CL\right)_{ik_{t}tl_{s}s}}\sim N\left({0,{\left(1-\rho_{\tau C}\right)}\sigma_{\tau C}^{2}}\right)
+\end{array}
+\]
+
+
+The reader-case factor is split up as follows:
+
+\[
+\begin{array}{l}
+{RC_{j{k_{t}}t}}\sim N\left({0,{\rho_{RC}}\sigma_{RC}^{2}}\right)\\
+{\left(RCL\right)_{jk_{t}tl_{s}s}}\sim N\left({0,{\left(1-\rho_{RC}\right)}\sigma_{RC}^{2}}\right)
+\end{array}
+\]
+
+
+Finally, the error term is split up as follows:
+
+\[
+\begin{array}{l}
+{\varepsilon_{ij{k_{t}}t}}\sim N\left({0,\rho_{\varepsilon}\sigma_{\varepsilon}^{2}}\right)\\
+{\left(\varepsilon L\right)_{ij{k_{t}}tl_{s}s}}\sim N\left({0,\left(1-\rho_{\varepsilon}\right)\sigma_{\varepsilon}^{2}}\right)
+\end{array}
+\]
+
+
+For the simulated data the following values, selected from Table 1
+in \cite{RoeMetzDorBerMetzMeth1997}, were used:
+
+\[
+\begin{array}{l}
+\sigma_{R}^{2}=0.2;\sigma_{\tau R}^{2}=0.005;\\
+\sigma_{C}^{2}=0.7;\sigma_{\tau C}^{2}=0.05;\sigma_{RC}^{2}=0.2;\sigma_{\varepsilon}^{2}=0.05;
+\end{array}
+\]
+
+
+The correlation parameters were set as follows:
+
+\[
+\rho_{C}=0.1;\rho_{RC}=0.1;\rho_{\tau C}=0.9;\rho_{\varepsilon}=0.9;
+\]
+
+\end{document}  

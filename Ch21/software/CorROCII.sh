@@ -1,0 +1,17 @@
+#!/usr/bin/expect --
+spawn ssh -l dev 172.16.36.80
+expect "password:"
+send "1234\r"
+expect ">"
+send "net use X: /delete\r"
+expect ">"
+send "net use X: \"\\\\vmware-host\\Shared Folders\\Debug\"\r"
+expect ">"
+send "cd /D X:\r"
+expect ">"
+send "CORROC2.bat\r"
+expect ">"
+send "cd /D C:\r"
+expect ">"
+send "exit\r"
+expect eof

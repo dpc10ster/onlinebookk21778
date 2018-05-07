@@ -1,0 +1,69 @@
+JSS 1592: Chakraborty, Zhai
+
+Analysis of Data Acquired Using ROC Paradigm and Its Extensions
+
+---------------------------------------------------------
+For further instruction on JSS style requirements please see the JSS style manual (in particular section 2.1 Style Checklist) at http://www.jstatsoft.org/downloads/JSSstyle.zip
+
+Also see FAQ at: http://www.jstatsoft.org/style
+
+For further references please see RECENT JSS papers for detailed documentation and examples.
+---------------------------------------------------------
+
+
+From the editorial team:
+
+o All software mentioned should have a proper citation in the reference list.
+
+o Running the examples gives me the following error:
+>
+>> OutputReport(dataset = frocData, method = "DBMH", fom = "Wilcoxon",
+> +ÊÊÊÊÊÊÊÊÊÊÊÊÊ showWarnings = FALSE) # ERROR!
+> Error in FigureOfMerit(dataset, fom) :
+>Ê Cannot use Wilcoxon with FROC or ROI data
+> Calls: OutputReport -> DBMHAnalysis -> FigureOfMerit
+
+o There are many style issues, especially code and reference formatting. (See below)
+
+
+Manuscript style comments:
+
+o Please only introduce an abbreviation within the abstract if it is needed again within the abstract. Otherwise, please introduce it within the body of the manuscript.
+
+o \section, \subsection, etc. should be in sentence style (see http://www.jstatsoft.org/style#q2), e.g., change Ò2. Statistical Models and MethodsÓ to Ò2. Statistical models and methodsÓ
+
+o The code presented in the manuscript should not contain comments within the verbatim code. Instead the comments should be made in the normal LaTeX text.
+
+o Code should be presented without additional background or coloring. 
+
+o For the code layout in R publications, we use the command prompt ÒR>Ó and typically distinguish input/output using Sinput/Soutput (or equivalently CodeInput/CodeOutput). Unless there are special reasons to format it differently, the input should use the text width (up to 76 or 77 characters) and be indented by two spaces, e.g.,
+
+begin{Sinput}
+R> example_model <- lm(response ~ variable1 + variable2 + variable3, 
++    weights = w, data = mydata)
+\end{Sinput}
+
+o All captions should appear below the corresponding figure/table.
+
+o All table row/column headers should also be in sentence style. 
+
+o As a reminder, please make sure that:
+	- \proglang, \pkg and \code have been used for highlighting throughout the paper (including titles and references), except where explicitly escaped.
+
+
+References:
+
+o The Annals of Mathematical Statistics (not: Annals of Mathematical Statistics)
+
+o Springer-Verlag (not: Springer)
+
+o As mentioned above, please make sure that all software packages are \cite{}'d properly.
+
+o All references should be in title style.
+
+o See FAQ for specific reference instructions.
+
+
+Code:
+
+o Please make sure that the files needed to replicate all code/examples within the manuscript are included in a standalone replication script.

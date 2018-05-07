@@ -1,0 +1,10 @@
+{
+    "dialog-state" : {
+        "caseSensitive" : false,
+        "filePatterns" : [
+        ],
+        "path" : "~/onlinebookk21778/Ch22/software",
+        "query" : "if (p_val < alpha)",
+        "regex" : false
+    }
+}

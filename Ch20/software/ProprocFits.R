@@ -1,0 +1,9 @@
+ProprocFits <- function(fileName) {
+  mrmcFile <- paste0("PROPROCDegeneracy/", fileName, " proproc area pooled.csv")
+  if (!file.exists(mrmcFile)) stop("need to run proproc for this dataset")
+  proprocRet <- read.csv(mrmcFile)
+  c1 <- matrix(data = proprocRet$c, nrow = length(unique(proprocRet$T)), ncol = length(unique(proprocRet$R)), byrow = TRUE)
+  da <- matrix(data = proprocRet$d_a, nrow = length(unique(proprocRet$T)), ncol = length(unique(proprocRet$R)), byrow = TRUE)
+  area <- matrix(data = proprocRet$area, nrow = length(unique(proprocRet$T)), ncol = length(unique(proprocRet$R)), byrow = TRUE)
+  return (list(c1 = c1, da = da, area = area))
+}

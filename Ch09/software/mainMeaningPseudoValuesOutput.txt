@@ -1,0 +1,16 @@
+> source(...)
+data file =  VanDyke.lrc , modality 1, reader 1
+Number of non-diseased cases =  69 
+number of diseased cases =  =  45 
+counts table for pseudovalues from non-diseased cases:
+-0.092   0.61  0.832  0.887  0.979 
+     1      2     10      9     47 
+counts table for ratings from non-diseased cases:
+ 1  2  3  4  5 
+47  9 10  2  1 
+counts table for pseudovalues from diseased cases:
+-0.568  0.475  0.828  1.052  1.107 
+     4      1      2     10     28 
+counts table for ratings from diseased cases:
+ 1  2  3  4  5 
+ 4  1  2 10 28 
