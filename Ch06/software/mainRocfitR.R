@@ -6,7 +6,7 @@ source("Transforms.R")
 source("LL.R")
 source("RocOperatingPointsFromRatingsTable.R")
 source("VarianceAz.R")
-source("ChisqrGoodnessOfFit.R");source("UtilGoodnessOfFit.R")
+source("ChisqrGoodnessOfFit.R")
 source("CombineBins.R")
 
 options(digits = 4)
