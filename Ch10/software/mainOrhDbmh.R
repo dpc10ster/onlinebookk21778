@@ -6,12 +6,12 @@ if (ROC) {
   fileName <- "VanDyke.lrc"
   rocData <- DfReadDataFile(
     fileName, 
-    format = "MRMC")
+    format = "MRMC", newExcelFileFormat = FALSE)
 } else {
   fileName <- "CXRinvisible3-20mm.xlsx"
   frocData <- DfReadDataFile(
     fileName, 
-    format = "JAFROC")
+    format = "JAFROC", newExcelFileFormat = FALSE)
   rocData <- DfFroc2Roc(frocData)
   rm(frocData)
 }

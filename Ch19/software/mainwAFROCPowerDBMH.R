@@ -131,6 +131,7 @@ for (i in 1:length(effectSizeROC)) {
   varYTC <- varCompROC$varComp[4]
   varYEps <- varCompROC$varComp[6]
   powerROC[i] <- SsPowerGivenJK(
+    frocData,
     JTest, 
     KTest, 
     alpha = 0.05, 
@@ -145,6 +146,7 @@ for (i in 1:length(effectSizeROC)) {
   varYTC <- varCompwAFROC$varComp[4]
   varYEps <- varCompwAFROC$varComp[6]
   powerwAFROC[i] <- SsPowerGivenJK(
+    frocData,
     JTest, KTest, 
     alpha = 0.05, 
     effectSize = effectSizewAFROC[i], 

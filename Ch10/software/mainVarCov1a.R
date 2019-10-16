@@ -10,10 +10,10 @@ ROC <- FALSE
 if (ROC) { # this block has ROC datasets
   #fileName <- "Franken1.lrc"
   fileName <- "VanDyke.lrc"
-  rocData <- DfReadDataFile(fileName, format = "MRMC", renumber = "TRUE")
+  rocData <- DfReadDataFile(fileName, format = "MRMC", sequentialNames = "TRUE", newExcelFileFormat = FALSE)
 } else {  # this block has FROC datasets
   fileName <- "CXRinvisible3-20mm.xlsx"
-  frocData <- DfReadDataFile(fileName, format = "JAFROC", renumber = "TRUE")
+  frocData <- DfReadDataFile(fileName, format = "JAFROC", sequentialNames = "TRUE", newExcelFileFormat = FALSE)
   rocData <- DfFroc2Roc(frocData)
 }
 jSelect <- 1  # selects the reader to be analyzed

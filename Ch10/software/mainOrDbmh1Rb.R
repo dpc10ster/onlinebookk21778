@@ -6,10 +6,10 @@ ROC <- FALSE
 if (ROC) {
   #fileName <- "Franken1.lrc"
   fileName <- "VanDyke.lrc"
-  rocData <- DfReadDataFile(fileName, format = "MRMC", renumber = "TRUE")
+  rocData <- DfReadDataFile(fileName, format = "MRMC", sequentialNames = "TRUE", newExcelFileFormat = FALSE)
 } else {
   fileName <- "CXRinvisible3-20mm.xlsx"
-  frocData <- DfReadDataFile(fileName, format = "JAFROC", renumber = "TRUE")
+  frocData <- DfReadDataFile(fileName, format = "JAFROC", sequentialNames = "TRUE", newExcelFileFormat = FALSE)
   rocData <- DfFroc2Roc(frocData)
 }
 jSelect <- 1

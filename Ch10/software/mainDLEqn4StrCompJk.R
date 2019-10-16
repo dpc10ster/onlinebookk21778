@@ -9,10 +9,10 @@ ROC <- FALSE
 if (ROC) {
   #fileName <- "Franken1.lrc"
   fileName <- "VanDyke.lrc"
-  rocData <- ReadDataFile(fileName, format = "MRMC", renumber = "TRUE")
+  rocData <- ReadDataFile(fileName, format = "MRMC", sequentialNames = "TRUE")
 } else {
   fileName <- "CXRinvisible3-20mm.xlsx"
-  frocData <- ReadDataFile(fileName, format = "JAFROC", renumber = "TRUE")
+  frocData <- ReadDataFile(fileName, format = "JAFROC", sequentialNames = "TRUE")
   rocData <- FROC2HrROC(frocData)
 }
 cat("data file = ", fileName, "\n")

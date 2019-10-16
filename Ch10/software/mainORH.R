@@ -11,7 +11,7 @@ fileName <- "CXRinvisible3-20mm.xlsx"
 frocData <- DfReadDataFile(
   fileName, 
   format = "JAFROC", 
-  renumber = "TRUE")
+  sequentialNames = "TRUE", newExcelFileFormat = FALSE)
 rocData <- DfFroc2Roc(frocData)
 
 zijk1 <- rocData$NL[,,,1]
@@ -31,7 +31,7 @@ cat("number of treatments = ", I,
 FOM <- UtilFigureOfMerit(
   rocData, FOM = "Wilcoxon")
 
-mtrxJK <- VarCovMtrxJK(rocData)
+mtrxJK <- VarCovMtrxJK(rocData) # this needs to be fixed !!!DPC!!! 10/14/19
 VarCovJK <- VarCovs(mtrxJK)
 Var <- VarCovJK$var
 Cov1 <- VarCovJK$cov1

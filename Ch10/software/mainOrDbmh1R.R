@@ -3,7 +3,7 @@ library(RJafroc)
 source("Wilcoxon.R")
 source("VarCov1Jk.R")
 fileName <- "CXRinvisible3-20mm.xlsx"
-frocData <- DfReadDataFile(fileName, format = "JAFROC")
+frocData <- DfReadDataFile(fileName, format = "JAFROC", newExcelFileFormat = FALSE)
 rocData <- DfFroc2Roc(frocData)
 jSelect <- 1
 rocData1R <- DfExtractDataset(rocData, rdrs = jSelect)
