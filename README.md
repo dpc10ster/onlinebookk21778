@@ -1,6 +1,5 @@
-# This is mostly superseded by the vignettes in RJafroc
+# This is mostly superseded by the vignettes in RJafroc at https://dpc10ster.github.io/RJafroc/
 
-See https://dpc10ster.github.io/RJafroc/
 
 # Reason 
 
