@@ -4,4 +4,4 @@ See https://dpc10ster.github.io/RJafroc/
 
 # Reason 
 
-Due to code updates, bug fixes, and new features and improved code organization, some of the online code in this repository may not run. It is more efficient for me to fix everything in the `RJafroc` repository that try to fix both `RJafroc` and the Online Appendix.
+Due to `RJafroc` code updates, bug fixes, new features and improved code organization, etc., some of the code in this repository may not run with the latest version of `RJafroc`. It is more efficient for me to fix everything in one repository, namely `RJafroc`, than try to fix both `RJafroc` and the Online Appendix repositories.
